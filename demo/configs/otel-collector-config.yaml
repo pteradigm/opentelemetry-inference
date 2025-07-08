@@ -1,0 +1,140 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  # Host metrics for inference demonstrations
+  hostmetrics:
+    collection_interval: 10s
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      memory:
+        metrics:
+          system.memory.usage:
+            enabled: true
+          system.memory.utilization:
+            enabled: true
+          system.linux.memory.available:
+            enabled: true
+          system.memory.limit:
+            enabled: true
+      load:
+        metrics:
+          system.cpu.load_average.15m:
+            enabled: true
+          system.cpu.load_average.5m:
+            enabled: true
+          system.cpu.load_average.1m:
+            enabled: true
+      processes:
+        metrics:
+          system.processes.count:
+            enabled: true
+          system.processes.created:
+            enabled: true
+      paging:
+      disk:
+        metrics:
+          system.disk.io:
+            enabled: true
+      network:
+        metrics:
+          system.network.io:
+            enabled: true
+  
+  # Scrape collector's own metrics and other services
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'otel-collector'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['localhost:8888']
+              labels:
+                instance: 'otel-collector'
+        
+        - job_name: 'victoriametrics'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['victoriametrics:8428']
+          metrics_path: '/metrics'
+        
+        - job_name: 'mlserver'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['mlserver:8082']
+          metrics_path: '/metrics'
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+    send_batch_max_size: 4096
+
+  metricsinference:
+    grpc:
+      endpoint: "mlserver:8081"  # MLServer gRPC endpoint
+      use_ssl: false
+      compression: true
+      keepalive:
+        time: 30s
+        timeout: 10s
+    timeout: 30
+    rules:
+      # Enhanced Kalman Filter: Multi-feature CPU prediction
+      # Using available metrics: memory utilization and load average
+      - model_name: "kalman-filter"
+        inputs: ["system.memory.utilization", "system.cpu.load_average.15m", "system.cpu.load_average.1m"]
+        # No outputs configured - will discover from model metadata:
+        # cpu_prediction, prediction_variance, innovation, cpu_trend, model_confidence
+
+exporters:
+  debug:
+    verbosity: detailed
+    sampling_initial: 2
+    sampling_thereafter: 1000
+
+  # Export to VictoriaMetrics via Prometheus remote write
+  prometheusremotewrite:
+    endpoint: "http://victoriametrics:8428/api/v1/write"
+
+service:
+  extensions: []
+  
+  pipelines:
+    # Main metrics pipeline with inference (for application and host metrics)
+    metrics:
+      receivers: [otlp, hostmetrics]
+      processors: [batch, metricsinference]
+      exporters: [debug, prometheusremotewrite]
+    
+    # Internal metrics pipeline (for collector self-monitoring)
+    metrics/internal:
+      receivers: [prometheus]
+      processors: [batch]
+      exporters: [prometheusremotewrite]
+    
+    # Traces pipeline (basic, no inference yet)
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+    
+    # Logs pipeline (basic, no inference yet)
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+
+  telemetry:
+    logs:
+      level: "debug"
+    metrics:
+      address: "0.0.0.0:8888"
+      level: "basic"

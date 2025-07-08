@@ -1,0 +1,55 @@
+metricsinference/server_error:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "failing_model"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_cpu.predicted"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/missing_input_metric:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "cpu_prediction"
+      inputs: ["nonexistent.metric"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_cpu.predicted"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/model_not_ready:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "not_ready_model"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_cpu.predicted"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/timeout_scenario:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 1  # Very short timeout to trigger timeout errors
+  rules:
+    - model_name: "slow_model"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_cpu.predicted"
+          data_type: "float"
+          output_index: 0

@@ -1,0 +1,47 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  metricsinference:
+    grpc:
+      endpoint: "localhost:8081"
+      use_ssl: false
+      compression: true
+    timeout: 30
+    rules:
+      # Example 1: CPU scaling with automatic output decoration
+      # Output will be: "system.cpu.utilization.scaled_result"
+      - model_name: "simple-scaler"
+        inputs: ["system.cpu.utilization"]
+        parameters:
+          scale_factor: 2.0
+
+      # Example 2: Memory scaling (same model, different input)
+      # Output will be: "system.memory.utilization.scaled_result"
+      - model_name: "simple-scaler"
+        inputs: ["system.memory.utilization"]
+        parameters:
+          scale_factor: 1.5
+
+      # Example 3: Multi-input sum operation
+      # Output will be: "metric1_multi.sum_result"
+      - model_name: "simple-sum"
+        inputs: ["metric1", "metric2"]
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [metricsinference]
+      exporters: [debug]
+
+  telemetry:
+    logs:
+      level: "debug"

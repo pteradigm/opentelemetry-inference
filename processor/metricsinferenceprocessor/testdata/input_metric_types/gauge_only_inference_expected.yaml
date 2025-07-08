@@ -1,0 +1,142 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: test-host
+        - key: service.name
+          value:
+            stringValue: filesystem-monitor
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: Filesystem bytes used
+            name: system.filesystem.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "41943040000"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/sda1
+                    - key: fstype
+                      value:
+                        stringValue: ext4
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: ext4
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "107374182400"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/sda2
+                    - key: fstype
+                      value:
+                        stringValue: xfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /home
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: xfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Fraction of filesystem used
+            gauge:
+              dataPoints:
+                - asDouble: 0.8
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/sda1
+                    - key: fstype
+                      value:
+                        stringValue: ext4
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: ext4
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.6
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/sda2
+                    - key: fstype
+                      value:
+                        stringValue: xfs
+                    - key: mode
+                      value:
+                        stringValue: rw
+                    - key: mountpoint
+                      value:
+                        stringValue: /home
+                    - key: state
+                      value:
+                        stringValue: used
+                    - key: type
+                      value:
+                        stringValue: xfs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: system.filesystem.utilization
+            unit: "1"
+          - description: Inference result from model utilization_prediction
+            gauge:
+              dataPoints:
+                - asDouble: 0.96
+                  attributes:
+                    - key: otel.inference.model.name
+                      value:
+                        stringValue: utilization_prediction
+                    - key: system.filesystem.utilization.device
+                      value:
+                        stringValue: /dev/sda1
+                    - key: system.filesystem.utilization.fstype
+                      value:
+                        stringValue: ext4
+                    - key: system.filesystem.utilization.mode
+                      value:
+                        stringValue: rw
+                    - key: system.filesystem.utilization.mountpoint
+                      value:
+                        stringValue: /
+                    - key: system.filesystem.utilization.state
+                      value:
+                        stringValue: used
+                    - key: system.filesystem.utilization.type
+                      value:
+                        stringValue: ext4
+                  timeUnixNano: "1000000"
+            name: filesystem_utilization.predicted
+        scope:
+          name: github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor
+          version: 0.0.1

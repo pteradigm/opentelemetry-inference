@@ -1,0 +1,92 @@
+metricsinference/multiple_models_same_input:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "cpu_anomaly_detector"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_cpu.anomaly.score"
+          data_type: "float"
+          output_index: 0
+    - model_name: "cpu_predictor"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_cpu.predicted"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/multiple_models_different_inputs:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "cpu_model"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_cpu.predicted"
+          data_type: "float"
+          output_index: 0
+    - model_name: "memory_model"
+      inputs: ["system.memory.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_memory.predicted"
+          data_type: "float"
+          output_index: 0
+    - model_name: "combined_model"
+      inputs: ["system.cpu.utilization", "system.memory.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_health.score"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/sequential_processing:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "stage1_model"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_cpu.normalized"
+          data_type: "float"
+          output_index: 0
+    - model_name: "stage2_model"
+      inputs: ["system.memory.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_memory.normalized"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/model_versioning:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "cpu_model"
+      model_version: "v1"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_cpu.predicted.v1"
+          data_type: "float"
+          output_index: 0
+    - model_name: "cpu_model"
+      model_version: "v2"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_cpu.predicted.v2"
+          data_type: "float"
+          output_index: 0

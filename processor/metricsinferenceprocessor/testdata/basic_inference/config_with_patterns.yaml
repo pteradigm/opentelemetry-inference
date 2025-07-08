@@ -1,0 +1,59 @@
+metricsinference/cpu_with_pattern:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+    compression: true
+  timeout: 30
+  rules:
+    - model_name: "cpu_prediction"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "system_cpu.{output}"  # Exact pattern for backward compatibility
+      outputs:
+        - name: "predicted"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/memory_with_intelligent_naming:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "memory_prediction"
+      inputs: ["system.memory.utilization"]
+      # No output_pattern - will use intelligent naming
+      outputs:
+        - name: "predicted"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/multi_input_with_pattern:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "system_prediction"
+      inputs: ["system.cpu.utilization", "system.memory.utilization"]
+      output_pattern: "system.{output}"  # Custom pattern
+      outputs:
+        - name: "anomaly.score"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/multi_input_intelligent:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "health_prediction"
+      inputs: ["system.cpu.utilization", "system.memory.utilization"]
+      # No output_pattern - will use intelligent naming
+      outputs:
+        - name: "health_score"
+          data_type: "float"
+          output_index: 0
+        - name: "health_status"
+          data_type: "int"
+          output_index: 1

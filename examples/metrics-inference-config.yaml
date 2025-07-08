@@ -1,0 +1,69 @@
+# Example configuration for the metrics inference processor
+# This shows how to configure the processor to connect to an inference server
+# and process metrics using the inference results
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  metricsinference:
+    grpc:
+      endpoint: localhost:8001  # Address of the inference server
+      use_ssl: false            # Whether to use SSL/TLS
+      compression: true         # Enable gRPC compression
+      max_receive_message_size: 4194304  # 4MB max message size
+      headers:                  # Optional headers to send with requests
+        x-api-key: ""           # Add API key if needed
+      keepalive:                # Optional keepalive settings
+        time: 60s
+        timeout: 20s
+        permit_without_stream: true
+    
+    timeout: 30  # Timeout for inference requests in seconds
+    
+    rules:
+      # Example rule for CPU utilization prediction
+      - model_name: "cpu_prediction"
+        model_version: "1"      # Optional model version
+        inputs:
+          - "system.cpu.utilization"
+          - "system.memory.utilization"
+        output_name: "system.cpu.predicted"
+        output_data_type: "float"
+        parameters:            # Optional parameters for the model
+          prediction_horizon: 300
+      
+      # Example rule for anomaly detection
+      - model_name: "anomaly_detector"
+        inputs:
+          - "system.network.io.usage"
+        output_name: "system.network.anomaly_score"
+        output_data_type: "float"
+
+exporters:
+  otlp:
+    endpoint: localhost:4317
+    tls:
+      insecure: true
+  
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    namespace: otel
+    send_timestamps: true
+    metric_expiration: 180m
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [metricsinference]
+      exporters: [otlp, prometheus]
+  
+  telemetry:
+    logs:
+      level: debug

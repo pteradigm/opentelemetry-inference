@@ -1,0 +1,91 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: test-host
+        - key: service.name
+          value:
+            stringValue: test-service
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - scope:
+          name: github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor
+          version: 0.0.1
+        metrics:
+          - name: system.cpu.utilization
+            description: CPU utilization percentage
+            unit: "1"
+            gauge:
+              dataPoints:
+                - attributes:
+                    - key: cpu
+                      value:
+                        stringValue: "0"
+                    - key: state
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  asDouble: 0.75
+                - attributes:
+                    - key: cpu
+                      value:
+                        stringValue: "1"
+                    - key: state
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  asDouble: 0.68
+          - name: system.memory.utilization
+            description: Memory utilization percentage
+            unit: "1"
+            gauge:
+              dataPoints:
+                - attributes:
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  asDouble: 0.45
+          - name: system.disk.utilization
+            description: Disk utilization percentage
+            unit: "1"
+            gauge:
+              dataPoints:
+                - attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/sda1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  asDouble: 0.23
+          - name: system.network.packets
+            description: Network packets count
+            unit: "{packets}"
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                    - key: direction
+                      value:
+                        stringValue: receive
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  asInt: "1000"
+                - attributes:
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                    - key: direction
+                      value:
+                        stringValue: transmit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  asInt: "800"

@@ -1,0 +1,83 @@
+version: '3.8'
+
+networks:
+  otel-demo:
+    driver: bridge
+
+services:
+  # MLServer for inference models - Demo-specific Kalman Filter
+  mlserver:
+    image: opentelemetry-inference/demo-mlserver:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.mlserver
+    environment:
+      - PROTOCOL=v2
+      - MLSERVER_HTTP_PORT=8080
+      - MLSERVER_GRPC_PORT=8081
+      - MLSERVER_MODELS_DIR=/app/models
+      - MLSERVER_HOST=0.0.0.0
+    ports:
+      - "8081:8081"   # gRPC inference
+      - "8082:8080"   # HTTP inference (avoid conflict with demo)
+    networks:
+      - otel-demo
+
+  # Our Custom OpenTelemetry Collector with Inference Processor
+  otel-collector:
+    image: opentelemetry-inference/collector:latest
+    build:
+      context: ../opentelemetry-inference-collector
+      dockerfile: Dockerfile
+    command: ["--config=/etc/otelcol/otel-collector-config.yaml"]
+    volumes:
+      - ./configs/otel-collector-config.yaml:/etc/otelcol/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # Prometheus metrics (collector self-monitoring)
+    depends_on:
+      mlserver:
+        condition: service_started
+      victoriametrics:
+        condition: service_started
+    networks:
+      - otel-demo
+
+  # VictoriaMetrics for high-performance metrics storage
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.93.15
+    command:
+      - "--storageDataPath=/storage"
+      - "--httpListenAddr=:8428"
+      - "--retentionPeriod=7d"
+      - "--maxLabelsPerTimeseries=50"
+    volumes:
+      - vm-data:/storage
+    ports:
+      - "8428:8428"   # VictoriaMetrics HTTP API
+    networks:
+      - otel-demo
+
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:10.2.2
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=temp1234
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./configs/grafana/provisioning:/etc/grafana/provisioning
+      - ./configs/grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "3000:3000"   # Grafana web UI
+    depends_on:
+      victoriametrics:
+        condition: service_started
+    networks:
+      - otel-demo
+
+volumes:
+  vm-data:
+  grafana-data:

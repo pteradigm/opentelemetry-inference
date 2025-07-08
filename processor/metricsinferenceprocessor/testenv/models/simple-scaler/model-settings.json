@@ -1,0 +1,7 @@
+{
+  "name": "simple-scaler",
+  "implementation": "model.SimpleScalerModel",
+  "parameters": {
+    "scale_factor": 2.0
+  }
+}

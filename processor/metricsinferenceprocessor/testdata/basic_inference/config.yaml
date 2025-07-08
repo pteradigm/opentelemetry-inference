@@ -1,0 +1,66 @@
+metricsinference/basic_cpu_prediction:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+    compression: true
+  timeout: 30
+  rules:
+    - model_name: "cpu_prediction"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "{output}"  # Use exact output name for backward compatibility
+      outputs:
+        - name: "system_cpu.predicted"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/basic_memory_prediction:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "memory_prediction"
+      inputs: ["system.memory.utilization"]
+      output_pattern: "{output}"  # Use exact output name for backward compatibility
+      outputs:
+        - name: "system_memory.predicted"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/multiple_inputs:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "system_prediction"
+      output_pattern: "{output}"
+      inputs: ["system.cpu.utilization", "system.memory.utilization"]
+      outputs:
+        - name: "system.anomaly.score"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/multiple_outputs:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "health_prediction"
+      output_pattern: "{output}"
+      inputs: ["system.cpu.utilization"]
+      outputs:
+        - name: "system_health.score"
+          data_type: "float"
+          output_index: 0
+        - name: "system_health.status"
+          data_type: "int"
+          output_index: 1
+
+metricsinference/no_rules:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules: []

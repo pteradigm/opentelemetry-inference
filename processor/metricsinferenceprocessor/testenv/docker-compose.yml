@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  mlserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9080:8080"  # HTTP endpoint (testenv)
+      - "9081:8081"  # gRPC endpoint (testenv)
+    environment:
+      - PROTOCOL=v2
+      - MLSERVER_HTTP_PORT=8080
+      - MLSERVER_GRPC_PORT=8081
+      - MLSERVER_MODELS_DIR=/app/models
+      - MLSERVER_HOST=0.0.0.0
+      - MLSERVER_LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v2/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - ./models:/app/models:ro
+      - /tmp/mlserver-metrics:/app/.metrics
+      - /tmp/mlserver-envs:/app/.envs

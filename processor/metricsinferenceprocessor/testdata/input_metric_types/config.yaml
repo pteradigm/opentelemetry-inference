@@ -1,0 +1,59 @@
+metricsinference/sum_gauge_inference:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+    compression: true
+  timeout: 30
+  rules:
+    - model_name: "filesystem_prediction"
+      inputs: ["system.filesystem.usage", "system.filesystem.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_filesystem.predicted"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/gauge_only_inference:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "utilization_prediction" 
+      inputs: ["system.filesystem.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "filesystem_utilization.predicted"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/sum_only_inference:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "usage_prediction"
+      inputs: ["system.filesystem.usage"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "filesystem_usage.predicted"
+          data_type: "int"
+          output_index: 0
+
+metricsinference/multi_attribute_inference:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "capacity_anomaly_detection"
+      inputs: ["system.filesystem.usage", "system.filesystem.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "filesystem_usage_filesystem_utilization.anomaly_score"
+          data_type: "float"
+          output_index: 0
+        - name: "filesystem_usage_filesystem_utilization.health_status"
+          data_type: "int"
+          output_index: 1

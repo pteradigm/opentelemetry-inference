@@ -1,0 +1,75 @@
+metricsinference/float_output:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "float_prediction_model"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_cpu.predicted.float"
+          data_type: "float"
+          output_index: 0
+
+metricsinference/int_output:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "int_prediction_model"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_cpu.predicted.int"
+          data_type: "int"
+          output_index: 0
+
+metricsinference/double_output:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "double_prediction_model"
+      inputs: ["system.cpu.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_cpu.predicted.double"
+          data_type: "double"
+          output_index: 0
+
+metricsinference/mixed_types:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "mixed_types_model"
+      inputs: ["system.cpu.utilization", "system.memory.utilization"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system.anomaly.score"
+          data_type: "float"
+          output_index: 0
+        - name: "system.alert.level"
+          data_type: "int"
+          output_index: 1
+        - name: "system.confidence"
+          data_type: "double"
+          output_index: 2
+
+metricsinference/int_gauge_input:
+  grpc:
+    endpoint: "mock-server:8080"
+    use_ssl: false
+  timeout: 30
+  rules:
+    - model_name: "int_input_model"
+      inputs: ["system.network.packets"]
+      output_pattern: "{output}"
+      outputs:
+        - name: "system_network.predicted"
+          data_type: "int"
+          output_index: 0

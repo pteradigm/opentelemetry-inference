@@ -1,0 +1,19 @@
+type: metricsinference
+status:
+  class: processor
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [rbellamy]
+
+tests:
+  skip_lifecycle: true
+  config:
+    grpc:
+      endpoint: "localhost:12345"
+    rules:
+      - model_name: "test_model"
+        inputs: ["test_metric"]
+        outputs:
+          - name: "test_output"

@@ -1,0 +1,36 @@
+metricsinference:
+  grpc:
+    endpoint: "localhost:12345"
+  rules:
+    - model_name: "calculate_percent"
+      inputs: ["metric1", "metric2"]
+      outputs:
+        - name: "calculated_percent"
+    - model_name: "scale_1000"
+      inputs: ["metric1"]
+      outputs:
+        - name: "scaled_metric"
+
+metricsinference/missing_model_name:
+  grpc:
+    endpoint: "localhost:12345"
+  rules:
+    - inputs: ["metric1", "metric2"]
+      outputs:
+        - name: "test_output"
+
+metricsinference/missing_inputs:
+  grpc:
+    endpoint: "localhost:12345"
+  rules:
+    - model_name: "test_model"
+      outputs:
+        - name: "test_output"
+
+metricsinference/missing_outputs:
+  grpc:
+    endpoint: "localhost:12345"
+  rules:
+    - model_name: "test_model"
+      inputs: ["metric1"]
+      # No outputs configured - should be valid with metadata discovery

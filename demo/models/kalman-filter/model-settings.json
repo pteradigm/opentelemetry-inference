@@ -1,0 +1,7 @@
+{
+  "name": "kalman-filter",
+  "implementation": "model.KalmanFilterModel",
+  "parameters": {
+    "uri": "./models/kalman-filter"
+  }
+}

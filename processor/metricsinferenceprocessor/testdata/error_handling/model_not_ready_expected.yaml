@@ -1,0 +1,52 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: test-host
+        - key: service.name
+          value:
+            stringValue: test-service
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: CPU utilization percentage
+            gauge:
+              dataPoints:
+                - asDouble: 0.75
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: "0"
+                    - key: state
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.68
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: "1"
+                    - key: state
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: system.cpu.utilization
+            unit: "1"
+          - description: Memory utilization percentage
+            gauge:
+              dataPoints:
+                - asDouble: 0.45
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: system.memory.utilization
+            unit: "1"
+        scope:
+          name: github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor
+          version: 0.0.1

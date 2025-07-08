@@ -1,0 +1,61 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  metricsinference:
+    grpc:
+      endpoint: "localhost:8081"  # MLServer gRPC endpoint
+      use_ssl: false
+      compression: true
+    timeout: 30
+    rules:
+      - model_name: "simple-scale"
+        model_version: "v1"
+        inputs: ["system.cpu.utilization"]
+        outputs:
+          - name: "system.cpu.predicted"
+            data_type: "float"
+            output_index: 0
+        parameters:
+          scale_factor: 2.0
+
+exporters:
+  debug:
+    verbosity: detailed
+  
+  # Example OTLP export to another collector or backend
+  otlp:
+    endpoint: "http://localhost:4317"
+    tls:
+      insecure: true
+
+service:
+  extensions: []
+  
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [batch, metricsinference]
+      exporters: [debug]
+    
+    # Metrics pipeline without inference (passthrough)
+    metrics/passthrough:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+
+  telemetry:
+    logs:
+      level: "info"
+    metrics:
+      address: "localhost:8888"

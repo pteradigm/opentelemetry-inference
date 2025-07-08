@@ -1,0 +1,73 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: test-host
+        - key: service.name
+          value:
+            stringValue: test-service
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: CPU utilization percentage
+            gauge:
+              dataPoints:
+                - asDouble: 0.75
+                  attributes:
+                    - key: cpu
+                      value:
+                        stringValue: "0"
+                    - key: state
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: system.cpu.utilization
+            unit: "1"
+          - description: Memory utilization percentage
+            gauge:
+              dataPoints:
+                - asDouble: 0.45
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: system.memory.utilization
+            unit: "1"
+          - description: Network packets count
+            gauge:
+              dataPoints:
+                - asInt: "1000"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: receive
+                    - key: interface
+                      value:
+                        stringValue: eth0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: system.network.packets
+            unit: '{packets}'
+          - description: Inference result from model int_prediction_model
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: otel.inference.model.name
+                      value:
+                        stringValue: int_prediction_model
+                    - key: system.cpu.utilization.cpu
+                      value:
+                        stringValue: "0"
+                    - key: system.cpu.utilization.state
+                      value:
+                        stringValue: user
+                  timeUnixNano: "1000000"
+            name: system_cpu.predicted.int
+        scope:
+          name: github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor
+          version: 0.0.1

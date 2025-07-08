@@ -1,0 +1,32 @@
+dist:
+  name: opentelemetry-inference-collector
+  description: OpenTelemetry Inference Collector
+  output_path: ./opentelemetry-inference-collector
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.127.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.127.0
+  - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.127.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.127.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.127.0
+
+processors:
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.127.0
+  - gomod: github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor v0.0.1
+    import: github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor
+    name: 'metricsinferenceprocessor'
+    path: 'processor/metricsinferenceprocessor'
+
+receivers:
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.127.0
+  - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.127.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.127.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.127.0
+
+# Extensions temporarily disabled due to version conflicts
+# extensions:
+#   - gomod: go.opentelemetry.io/collector/extension/ballastextension v0.127.0
+#   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.127.0
+
+replaces:
+  - github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor => ./processor/metricsinferenceprocessor

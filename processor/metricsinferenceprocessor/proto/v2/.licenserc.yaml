@@ -1,0 +1,4 @@
+ignore:
+  - "*.pb.go"
+  - "*.pb.gw.go"
+  - "*_grpc.pb.go"

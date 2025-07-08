@@ -1,0 +1,18 @@
+{
+    "gopls": {},
+    "cSpell.words": [
+        "componenttest",
+        "confmap",
+        "consumertest",
+        "mapstructure",
+        "metricsinference",
+        "metricsinferenceprocessor",
+        "onnxruntime",
+        "pcommon",
+        "pdata",
+        "pmetric",
+        "processorhelper",
+        "processortest",
+        "yalue"
+    ],
+}
