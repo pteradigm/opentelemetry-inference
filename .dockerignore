@@ -1,0 +1,41 @@
+# Build artifacts
+otelcol-dev/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.txt
+coverage.out
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+tasks/
+examples/
+
+# CI/CD
+.github/
+.releaserc.json
+.commitlintrc.json
+
+# Development
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Demo environment
+demo/
+testenv/
+
+# Temporary files
+tmp/
+temp/
