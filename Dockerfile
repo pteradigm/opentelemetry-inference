@@ -31,7 +31,7 @@ RUN adduser -D -u 10001 otel
 WORKDIR /
 
 # Copy binary from builder
-COPY --from=builder /app/otelcol-dev/opentelemetry-inference /opentelemetry-inference
+COPY --from=builder /app/opentelemetry-inference-collector/opentelemetry-inference-collector /opentelemetry-inference
 
 # Copy default configuration
 COPY --from=builder /app/otelcol.yaml /etc/otel/config.yaml
