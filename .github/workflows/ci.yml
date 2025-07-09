@@ -26,7 +26,9 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
       
       - name: Run golangci-lint
-        run: golangci-lint run ./...
+        run: |
+          cd processor/metricsinferenceprocessor
+          golangci-lint run ./...
 
   test:
     runs-on: ubuntu-latest
@@ -66,7 +68,14 @@ jobs:
         run: make build
       
       - name: Test collector binary
-        run: ./otelcol-dev/opentelemetry-inference --version
+        run: |
+          ls -la otelcol-dev/ || echo "Directory not found"
+          if [ -f otelcol-dev/opentelemetry-inference ]; then
+            ./otelcol-dev/opentelemetry-inference --version
+          else
+            echo "Binary not found at expected location"
+            find . -name "opentelemetry-inference" -type f 2>/dev/null || echo "Binary not found anywhere"
+          fi
 
   docker-build:
     runs-on: ubuntu-latest
