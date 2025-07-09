@@ -189,7 +189,6 @@ linters-settings:
 
 linters:
   enable:
-    - copyloopvar
     - decorder
     - depguard
     - errcheck

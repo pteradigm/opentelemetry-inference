@@ -7,7 +7,8 @@ RUN apk add --no-cache make git
 WORKDIR /app
 
 # Copy go mod files
-COPY go.mod go.sum ./
+COPY go.mod ./
+COPY go.sum* ./
 COPY processor/metricsinferenceprocessor/go.mod processor/metricsinferenceprocessor/go.sum ./processor/metricsinferenceprocessor/
 
 # Download dependencies

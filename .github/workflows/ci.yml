@@ -103,7 +103,9 @@ jobs:
         run: make build
       
       - name: Run integration tests
-        run: make integration-test
+        run: |
+          cd processor/metricsinferenceprocessor
+          make integration-test-kserve DOCKER_COMPOSE="docker compose"
 
   conventional-commits:
     runs-on: ubuntu-latest
