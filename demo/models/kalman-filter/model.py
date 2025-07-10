@@ -48,6 +48,15 @@ class KalmanFilterModel(MLModel):
         self.adaptive_enabled = True
         self.min_observations_for_adaptation = 20
         
+        # Variance limiting parameters
+        self.max_variance = 10.0  # Maximum allowed variance
+        self.min_variance = 1e-6  # Minimum variance to prevent singularity
+        self.variance_reset_threshold = 100.0  # Reset if variance exceeds this
+        
+        # Process noise bounds
+        self.max_process_noise = 0.1  # Maximum Q diagonal elements
+        self.min_process_noise = 1e-6  # Minimum Q diagonal elements
+        
         # Preprocessing parameters
         self.missing_value_threshold = 0.15  # 15% missing data threshold
         self.outlier_threshold = 3.0  # Standard deviations for outlier detection
@@ -86,18 +95,18 @@ class KalmanFilterModel(MLModel):
         ], dtype=float)
         
         # Initial process noise covariance
-        # Will be adapted based on innovation sequences
-        self.filter.Q = np.eye(self.state_dim) * 0.01
-        self.filter.Q[1, 1] = 0.001  # Lower noise for trend
-        self.filter.Q[4, 4] = 0.1    # Higher noise for context switches
+        # More conservative values to prevent variance explosion
+        self.filter.Q = np.eye(self.state_dim) * 0.001
+        self.filter.Q[1, 1] = 0.0001  # Lower noise for trend
+        self.filter.Q[4, 4] = 0.01    # Higher noise for context switches
         
         # Measurement noise covariance
-        # Based on typical measurement uncertainties
-        self.filter.R = np.diag([0.02, 0.03, 0.1])  # CPU, memory, load_avg
+        # Optimized based on tuning experiments for lower MSE
+        self.filter.R = np.diag([0.01, 0.01, 0.05])  # CPU, memory, load_avg
         
         # Initial state covariance
-        # High uncertainty initially
-        self.filter.P = np.eye(self.state_dim) * 100.
+        # Moderate uncertainty initially (was 100, now 1.0)
+        self.filter.P = np.eye(self.state_dim) * 1.0
         
         # Initial state
         self.filter.x = np.array([
@@ -180,28 +189,34 @@ class KalmanFilterModel(MLModel):
         if self.filter.y is not None:
             prediction_error = np.abs(self.filter.y).mean()
             if prediction_error > 0.1:  # High prediction error
-                self.filter.Q *= 1.1  # Increase process noise
+                self.filter.Q *= 1.05  # Smaller increase (was 1.1)
             elif prediction_error < 0.05:  # Low prediction error
-                self.filter.Q *= 0.95  # Decrease process noise
+                self.filter.Q *= 0.98  # Smaller decrease (was 0.95)
         
-        # Ensure positive definiteness
-        self.filter.Q = np.maximum(self.filter.Q, 1e-6 * np.eye(self.state_dim))
-        self.filter.R = np.maximum(self.filter.R, 1e-6 * np.eye(self.obs_dim))
+        # Ensure positive definiteness and apply bounds
+        self.filter.Q = np.clip(self.filter.Q, self.min_process_noise, self.max_process_noise)
+        self.filter.R = np.maximum(self.filter.R, self.min_variance * np.eye(self.obs_dim))
+        
+        # Ensure Q remains a proper covariance matrix
+        self.filter.Q = 0.5 * (self.filter.Q + self.filter.Q.T)  # Symmetrize
+        eigvals = np.linalg.eigvalsh(self.filter.Q)
+        if np.min(eigvals) < self.min_process_noise:
+            self.filter.Q += (self.min_process_noise - np.min(eigvals)) * np.eye(self.state_dim)
     
     async def metadata(self) -> MetadataModelResponse:
         """
         Return model metadata including input/output specifications.
         """
         # Define input metadata - multiple system metrics
-        # Note: Adjusted to match available metrics from hostmetrics receiver
+        # Updated to include actual CPU utilization for better predictions
         inputs = [
             MetadataTensor(
-                name="memory_utilization",
+                name="cpu_utilization",
                 datatype="FP64", 
                 shape=[-1],  # Variable batch size
             ),
             MetadataTensor(
-                name="load_average_15m",
+                name="memory_utilization",
                 datatype="FP64",
                 shape=[-1],
             ),
@@ -270,26 +285,18 @@ class KalmanFilterModel(MLModel):
         # Handle multi-input mode with new metric order
         if len(payload.inputs) == 3:
             # Multi-input mode - decode all inputs
-            # New order: memory, load_avg_15m, load_avg_1m
-            memory_utilization = NumpyCodec.decode_input(payload.inputs[0])
-            load_average_15m = NumpyCodec.decode_input(payload.inputs[1])
-            load_average_1m = NumpyCodec.decode_input(payload.inputs[2])
+            # New order: cpu_utilization, memory_utilization, load_avg_1m
+            cpu_utilization = NumpyCodec.decode_input(payload.inputs[0])
+            memory_utilization = NumpyCodec.decode_input(payload.inputs[1])
+            load_average = NumpyCodec.decode_input(payload.inputs[2])
             
             # Flatten if needed
+            if cpu_utilization.ndim > 1:
+                cpu_utilization = cpu_utilization.flatten()
             if memory_utilization.ndim > 1:
                 memory_utilization = memory_utilization.flatten()
-            if load_average_15m.ndim > 1:
-                load_average_15m = load_average_15m.flatten()
-            if load_average_1m.ndim > 1:
-                load_average_1m = load_average_1m.flatten()
-            
-            # Estimate CPU utilization from load average
-            # Load average > number of CPUs indicates high CPU usage
-            # Normalize by assuming 8 CPUs (will be refined later)
-            cpu_utilization = np.clip(load_average_1m / 8.0, 0.0, 1.0)
-            
-            # Use 15m load average as our primary load metric
-            load_average = load_average_15m
+            if load_average.ndim > 1:
+                load_average = load_average.flatten()
             
         else:
             raise ValueError(f"Expected 3 inputs, got {len(payload.inputs)}")
@@ -333,10 +340,25 @@ class KalmanFilterModel(MLModel):
             # Calculate innovation magnitude
             innovation = float(np.linalg.norm(self.filter.y)) if hasattr(self.filter, 'y') and self.filter.y is not None else 0.0
             
-            # Calculate model confidence based on covariance and innovation
-            # Lower variance and innovation = higher confidence
-            trace_P = np.trace(self.filter.P)
-            confidence = 1.0 / (1.0 + trace_P * 0.01 + innovation * 0.1)
+            # Check for variance explosion and reset if needed
+            if prediction_variance > self.variance_reset_threshold:
+                self.filter.P = np.eye(self.state_dim) * 1.0  # Reset to initial
+                prediction_variance = 1.0
+            
+            # Apply variance limits
+            self.filter.P = np.clip(self.filter.P, self.min_variance, self.max_variance)
+            prediction_variance = np.clip(prediction_variance, self.min_variance, self.max_variance)
+            
+            # Condition the covariance matrix to prevent numerical issues
+            self.filter.P = 0.5 * (self.filter.P + self.filter.P.T)  # Symmetrize
+            eigvals, eigvecs = np.linalg.eigh(self.filter.P)
+            eigvals = np.clip(eigvals, self.min_variance, self.max_variance)
+            self.filter.P = eigvecs @ np.diag(eigvals) @ eigvecs.T
+            
+            # Calculate model confidence based on bounded variance and innovation
+            # Normalize trace_P by state dimension for scale invariance
+            trace_P = np.trace(self.filter.P) / self.state_dim
+            confidence = 1.0 / (1.0 + trace_P * 0.1 + innovation * 0.1)
             confidence = np.clip(confidence, 0.0, 1.0)
             
             # Clamp predictions to valid ranges
