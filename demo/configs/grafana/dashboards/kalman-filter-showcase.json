@@ -164,7 +164,7 @@
             "type": "prometheus",
             "uid": "victoriametrics"
           },
-          "expr": "avg(memory_utilization_load_average_15m_load_average_1m_cpu_prediction)",
+          "expr": "avg(cpu_utilization_memory_utilization_load_average_1m_cpu_prediction)",
           "interval": "",
           "legendFormat": "Kalman Filter Prediction %",
           "refId": "B"
@@ -258,7 +258,7 @@
             "type": "prometheus",
             "uid": "victoriametrics"
           },
-          "expr": "avg(memory_utilization_load_average_15m_load_average_1m_prediction_variance) * 1000000",
+          "expr": "avg(cpu_utilization_memory_utilization_load_average_1m_prediction_variance) * 1000000",
           "interval": "",
           "legendFormat": "Prediction Variance (x10^6)",
           "refId": "A"
@@ -352,7 +352,7 @@
             "type": "prometheus",
             "uid": "victoriametrics"
           },
-          "expr": "avg(memory_utilization_load_average_15m_load_average_1m_innovation)",
+          "expr": "avg(cpu_utilization_memory_utilization_load_average_1m_innovation)",
           "interval": "",
           "legendFormat": "Innovation (Residual) (User)",
           "refId": "A"
@@ -482,7 +482,7 @@
             "type": "prometheus",
             "uid": "victoriametrics"
           },
-          "expr": "avg(memory_utilization_load_average_15m_load_average_1m_cpu_prediction)",
+          "expr": "avg(cpu_utilization_memory_utilization_load_average_1m_cpu_prediction)",
           "interval": "",
           "legendFormat": "Predicted CPU %",
           "refId": "A"
@@ -547,7 +547,7 @@
             "type": "prometheus",
             "uid": "victoriametrics"
           },
-          "expr": "count(memory_utilization_load_average_15m_load_average_1m_cpu_prediction)",
+          "expr": "count(cpu_utilization_memory_utilization_load_average_1m_cpu_prediction)",
           "interval": "",
           "legendFormat": "Active Predictions",
           "refId": "A"
@@ -794,7 +794,7 @@
             "type": "prometheus",
             "uid": "victoriametrics"
           },
-          "expr": "avg(memory_utilization_load_average_15m_load_average_1m_cpu_trend)",
+          "expr": "avg(cpu_utilization_memory_utilization_load_average_1m_cpu_trend)",
           "interval": "",
           "legendFormat": "CPU Trend/Velocity",
           "refId": "A"
@@ -804,7 +804,7 @@
             "type": "prometheus",
             "uid": "victoriametrics"
           },
-          "expr": "avg(memory_utilization_load_average_15m_load_average_1m_model_confidence)",
+          "expr": "avg(cpu_utilization_memory_utilization_load_average_1m_model_confidence)",
           "interval": "",
           "legendFormat": "Model Confidence",
           "refId": "B"
