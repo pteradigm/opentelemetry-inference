@@ -1,3 +1,20 @@
+## [1.0.0](https://github.com/pteradigm/opentelemetry-inference/compare/v0.2.0...v1.0.0) (2025-07-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* CI/CD workflows now follow unified 3-workflow pattern
+
+### Features
+
+* implement unified CI/CD workflow strategy ([42f8345](https://github.com/pteradigm/opentelemetry-inference/commit/42f8345714d13159ac4b9b89b681ff32e4c982f4))
+* implement unified CI/CD workflow strategy ([#4](https://github.com/pteradigm/opentelemetry-inference/issues/4)) ([5497d00](https://github.com/pteradigm/opentelemetry-inference/commit/5497d0031b290cacd741e4c0cb2122514b844ada))
+
+
+### Documentation
+
+* add comprehensive CI/CD documentation ([5002b10](https://github.com/pteradigm/opentelemetry-inference/commit/5002b10bc7ae13f5bbd9276d9d737560dae1fee2))
+
 ## [0.2.0](https://github.com/pteradigm/opentelemetry-inference/compare/v0.1.0...v0.2.0) (2025-07-11)
 
 
