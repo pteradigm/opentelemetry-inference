@@ -42,10 +42,27 @@ install-ocb:
 	curl --proto '=https' --tlsv1.2 -fL -o ocb $(OCB_URL)
 	chmod +x ocb
 
+# Version information
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+GIT_COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_DATE ?= $(shell date +"%Y-%m-%d %H:%M:%S" || echo "unknown")
+
+# Build flags for version injection
+# Note: main.Version is set in the generated main.go file
+LDFLAGS := -X 'main.Version=$(VERSION)'
+
 .PHONY: build
-build:
+build: ocb
 	@echo "Building OpenTelemetry Inference Collector..."
-	./ocb --config builder-config.yaml
+	@echo "Version: $(VERSION)"
+	VERSION=$(VERSION) ./ocb --config builder-config.yaml
+
+# OCB dependency check
+ocb:
+	@if [ ! -f ./ocb ]; then \
+		echo "OCB not found. Installing..."; \
+		$(MAKE) install-ocb; \
+	fi
 
 .PHONY: tidy
 tidy:

@@ -37,13 +37,6 @@
     ],
     "@semantic-release/changelog",
     [
-      "@semantic-release/exec",
-      {
-        "prepareCmd": "echo VERSION=${nextRelease.version} > .env && docker build -t ghcr.io/${process.env.GITHUB_REPOSITORY}:${nextRelease.version} -t ghcr.io/${process.env.GITHUB_REPOSITORY}:latest .",
-        "publishCmd": "docker push ghcr.io/${process.env.GITHUB_REPOSITORY}:${nextRelease.version} && docker push ghcr.io/${process.env.GITHUB_REPOSITORY}:latest"
-      }
-    ],
-    [
       "@semantic-release/git",
       {
         "assets": ["CHANGELOG.md"],
@@ -55,7 +48,7 @@
       {
         "assets": [
           {
-            "path": "otelcol-dev/opentelemetry-inference",
+            "path": "opentelemetry-inference-collector/opentelemetry-inference-collector",
             "label": "OpenTelemetry Inference Collector Binary (Linux AMD64)"
           }
         ]

@@ -47,7 +47,7 @@
       {
         "assets": [
           {
-            "path": "otelcol-dev/opentelemetry-inference",
+            "path": "opentelemetry-inference/opentelemetry-inference",
             "label": "OpenTelemetry Inference Collector Binary (Linux AMD64)"
           }
         ]

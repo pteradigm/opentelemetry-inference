@@ -272,6 +272,50 @@ See all available make targets:
 make help
 ```
 
+## CI/CD Pipeline
+
+The project uses a unified 3-workflow CI/CD strategy that provides clear separation of concerns:
+
+### 1. Continuous Integration (CI)
+
+The CI workflow validates code quality and functionality on every push and pull request:
+
+- **Linting**: Go formatting (gofmt, goimports, gofumpt), static analysis, and conventional commit messages
+- **Testing**: Unit tests with coverage reporting
+- **Building**: Binary compilation with version injection
+- **Integration Testing**: Service integration tests with MLServer
+- **Docker Validation**: Container image build verification
+
+Jobs run with intelligent dependencies: lint → test/build → integration-test/docker-build
+
+### 2. Automated Releases
+
+The release workflow runs after successful CI completion and handles:
+
+- **Semantic Versioning**: Automated version determination based on conventional commits
+  - `feat:` → minor version bump
+  - `fix:`, `perf:`, `refactor:` → patch version bump
+  - `BREAKING CHANGE:` → major version bump
+- **Artifact Publishing**: Binary artifacts attached to GitHub releases
+- **Container Registry**: Docker images published to GitHub Container Registry (GHCR)
+- **Multi-Platform Support**: Currently linux/amd64, ready for multi-arch expansion
+
+### 3. Documentation
+
+The documentation workflow automatically:
+
+- **Builds Go Documentation**: Generates API documentation from source
+- **Deploys to GitHub Pages**: Publishes documentation on main branch and tag pushes
+- **Maintains Version History**: Preserves documentation for each release
+
+### GitHub Container Registry
+
+Docker images are available at:
+```
+ghcr.io/pteradigm/opentelemetry-inference:latest
+ghcr.io/pteradigm/opentelemetry-inference:<version>
+```
+
 ## License
 
 See [LICENSE](LICENSE) file.
