@@ -208,6 +208,50 @@ The project uses a simplified build system based on OpenTelemetry Collector Buil
 
 ## Development
 
+### Initial Setup
+
+Set up your development environment with formatting tools and git hooks:
+
+```bash
+make setup
+```
+
+This will:
+- Install Go formatting tools (goimports, gofumpt)
+- Configure git pre-commit hooks for code quality
+- Set up the OpenTelemetry Collector Builder
+
+### Code Quality
+
+The project enforces code formatting standards through:
+
+1. **Automatic formatting** with `make fmt`:
+   - `go fmt` - Standard Go formatting
+   - `goimports` - Organizes imports
+   - `gofumpt` - Stricter formatting rules
+
+2. **Pre-commit hooks** that check:
+   - Go formatting before each commit
+   - Import ordering
+   - File size limits (5MB)
+
+3. **CI/CD checks** that verify:
+   - Code formatting (fail on unformatted code)
+   - Import ordering
+   - `go vet` static analysis
+   - `go mod tidy` consistency
+
+```bash
+# Check formatting without changing files
+make fmt-check
+
+# Auto-fix formatting issues
+make fmt
+
+# Run all linting checks
+make lint
+```
+
 ### Running Tests
 
 ```bash
@@ -216,6 +260,9 @@ make test
 
 # Run integration tests (requires podman)
 make integration-test
+
+# Run all tests
+make test-all
 ```
 
 ### Common Tasks
