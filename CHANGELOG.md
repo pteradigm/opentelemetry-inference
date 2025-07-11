@@ -1,3 +1,15 @@
+## [0.2.0](https://github.com/pteradigm/opentelemetry-inference/compare/v0.1.0...v0.2.0) (2025-07-11)
+
+
+### Features
+
+* **tasks:** add validation improvement tasks ([0087ec8](https://github.com/pteradigm/opentelemetry-inference/commit/0087ec82e53910541be3c6ca171e9d21eac67c19))
+
+
+### Bug Fixes
+
+* **ci:** only release after successful CI checks ([bd2185b](https://github.com/pteradigm/opentelemetry-inference/commit/bd2185bb619642d1e6d969c1d00afdd56b5fee4c))
+
 ## [0.1.0](https://github.com/pteradigm/opentelemetry-inference/compare/v0.0.1...v0.1.0) (2025-07-11)
 
 
