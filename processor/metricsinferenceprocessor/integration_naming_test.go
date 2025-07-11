@@ -20,12 +20,12 @@ func TestMLServerNamingStrategies(t *testing.T) {
 	// Start it with: cd testenv && podman-compose up -d
 
 	tests := []struct {
-		name          string
-		rule          Rule
-		inputMetric   string
-		inputValue    float64
-		expectedName  string
-		description   string
+		name         string
+		rule         Rule
+		inputMetric  string
+		inputValue   float64
+		expectedName string
+		description  string
 	}{
 		// Intelligent naming tests
 		{
@@ -166,10 +166,10 @@ func TestMLServerNamingStrategies(t *testing.T) {
 				}
 			}
 
-			assert.True(t, found, 
-				"%s: Expected metric '%s' not found. Description: %s", 
+			assert.True(t, found,
+				"%s: Expected metric '%s' not found. Description: %s",
 				tt.name, tt.expectedName, tt.description)
-			
+
 			// Verify the scaled value (simple-scaler multiplies by 2)
 			if found {
 				expectedValue := tt.inputValue * 2.0
@@ -235,14 +235,14 @@ func TestMLServerMultiInputNaming(t *testing.T) {
 			md := pmetric.NewMetrics()
 			rm := md.ResourceMetrics().AppendEmpty()
 			sm := rm.ScopeMetrics().AppendEmpty()
-			
+
 			// CPU metric
 			metric1 := sm.Metrics().AppendEmpty()
 			metric1.SetName("cpu.usage")
 			metric1.SetEmptyGauge()
 			dp1 := metric1.Gauge().DataPoints().AppendEmpty()
 			dp1.SetDoubleValue(40.0)
-			
+
 			// Memory metric
 			metric2 := sm.Metrics().AppendEmpty()
 			metric2.SetName("memory.usage")
@@ -273,7 +273,7 @@ func TestMLServerMultiInputNaming(t *testing.T) {
 							if metric.Type() == pmetric.MetricTypeGauge {
 								dp := metric.Gauge().DataPoints().At(0)
 								sumValue := dp.DoubleValue()
-								assert.InDelta(t, 100.0, sumValue, 0.01, 
+								assert.InDelta(t, 100.0, sumValue, 0.01,
 									"Expected sum of 40+60=100, got %f", sumValue)
 							}
 							break

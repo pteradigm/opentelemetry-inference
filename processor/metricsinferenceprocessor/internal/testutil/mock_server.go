@@ -23,9 +23,9 @@ type MockInferenceServer struct {
 	pb.UnimplementedGRPCInferenceServiceServer
 
 	// Configuration
-	responses     map[string]*pb.ModelInferResponse
-	metadata      map[string]*pb.ModelMetadataResponse
-	errors        map[string]error
+	responses map[string]*pb.ModelInferResponse
+	metadata  map[string]*pb.ModelMetadataResponse
+	errors    map[string]error
 
 	// Request tracking
 	requests        []*pb.ModelInferRequest
@@ -293,7 +293,7 @@ func CreateMockResponseForScalingArray(modelName string, scaleFactor float64, in
 	for i, v := range inputValues {
 		scaledValues[i] = v * scaleFactor
 	}
-	
+
 	return &pb.ModelInferResponse{
 		ModelName:    modelName,
 		ModelVersion: "1",
@@ -333,11 +333,11 @@ func CreateMockResponseForCalculation(modelName string, result float64) *pb.Mode
 // CreateMockResponseForMultipleOutputs creates a mock response for models with multiple outputs
 func CreateMockResponseForMultipleOutputs(modelName string, outputValues []float64) *pb.ModelInferResponse {
 	outputs := make([]*pb.ModelInferResponse_InferOutputTensor, len(outputValues))
-	
+
 	for i, value := range outputValues {
 		var datatype string
 		var contents *pb.InferTensorContents
-		
+
 		// Determine data type based on value (simple heuristic)
 		if value == float64(int64(value)) {
 			datatype = "INT64"
@@ -350,7 +350,7 @@ func CreateMockResponseForMultipleOutputs(modelName string, outputValues []float
 				Fp64Contents: []float64{value},
 			}
 		}
-		
+
 		outputs[i] = &pb.ModelInferResponse_InferOutputTensor{
 			Name:     fmt.Sprintf("output_%d", i),
 			Datatype: datatype,
@@ -358,7 +358,7 @@ func CreateMockResponseForMultipleOutputs(modelName string, outputValues []float
 			Contents: contents,
 		}
 	}
-	
+
 	return &pb.ModelInferResponse{
 		ModelName:    modelName,
 		ModelVersion: "1",
@@ -374,7 +374,7 @@ func CreateMockResponseForDataType(modelName string, dataType string, value inte
 		Datatype: dataType,
 		Shape:    []int64{1},
 	}
-	
+
 	switch dataType {
 	case "FP32":
 		if v, ok := value.(float32); ok {
@@ -409,7 +409,7 @@ func CreateMockResponseForDataType(modelName string, dataType string, value inte
 			}
 		}
 	}
-	
+
 	return &pb.ModelInferResponse{
 		ModelName:    modelName,
 		ModelVersion: "1",
@@ -426,7 +426,7 @@ func CreateMockResponseForMixedTypes(modelName string, values map[string]interfa
 	// output_1: alert_level (int32)
 	// output_2: confidence (float64)
 	outputs := make([]*pb.ModelInferResponse_InferOutputTensor, 3)
-	
+
 	// Create outputs in the expected order based on the test configuration
 	if v, ok := values["anomaly_score"].(float32); ok {
 		outputs[0] = &pb.ModelInferResponse_InferOutputTensor{
@@ -438,10 +438,10 @@ func CreateMockResponseForMixedTypes(modelName string, values map[string]interfa
 			},
 		}
 	}
-	
+
 	if v, ok := values["alert_level"].(int32); ok {
 		outputs[1] = &pb.ModelInferResponse_InferOutputTensor{
-			Name:     "output_1", 
+			Name:     "output_1",
 			Datatype: "INT32",
 			Shape:    []int64{1},
 			Contents: &pb.InferTensorContents{
@@ -449,7 +449,7 @@ func CreateMockResponseForMixedTypes(modelName string, values map[string]interfa
 			},
 		}
 	}
-	
+
 	if v, ok := values["confidence"].(float64); ok {
 		outputs[2] = &pb.ModelInferResponse_InferOutputTensor{
 			Name:     "output_2",
@@ -460,7 +460,7 @@ func CreateMockResponseForMixedTypes(modelName string, values map[string]interfa
 			},
 		}
 	}
-	
+
 	// Filter out any nil outputs (in case some values were missing)
 	var nonNilOutputs []*pb.ModelInferResponse_InferOutputTensor
 	for _, output := range outputs {
@@ -468,7 +468,7 @@ func CreateMockResponseForMixedTypes(modelName string, values map[string]interfa
 			nonNilOutputs = append(nonNilOutputs, output)
 		}
 	}
-	
+
 	return &pb.ModelInferResponse{
 		ModelName:    modelName,
 		ModelVersion: "1",

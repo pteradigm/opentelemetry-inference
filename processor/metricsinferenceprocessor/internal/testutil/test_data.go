@@ -179,7 +179,7 @@ func GenerateTestMetricsMultiDataPoints(metrics []TestMetricWithAttributes) pmet
 
 		for _, dp := range tm.DataPoints {
 			dataPoint := gauge.DataPoints().AppendEmpty()
-			
+
 			// Set timestamp
 			if dp.Timestamp.IsZero() {
 				dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(now))
@@ -208,12 +208,12 @@ func GenerateTestMetricsMultiDataPoints(metrics []TestMetricWithAttributes) pmet
 func GenerateTestMetricsWithResource(tm TestMetric, resourceAttrs map[string]string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
-	
+
 	// Set resource attributes
 	for k, v := range resourceAttrs {
 		rm.Resource().Attributes().PutStr(k, v)
 	}
-	
+
 	sm := rm.ScopeMetrics().AppendEmpty()
 
 	for i, name := range tm.MetricNames {
@@ -236,26 +236,26 @@ func GenerateTestMetricsWithResource(tm TestMetric, resourceAttrs map[string]str
 // GenerateComplexTestMetrics creates a more complex set of metrics for testing
 func GenerateComplexTestMetrics() pmetric.Metrics {
 	md := pmetric.NewMetrics()
-	
+
 	// First resource with CPU metrics
 	rm1 := md.ResourceMetrics().AppendEmpty()
 	rm1.Resource().Attributes().PutStr("host.name", "host1")
 	rm1.Resource().Attributes().PutStr("service.name", "test-service")
-	
+
 	sm1 := rm1.ScopeMetrics().AppendEmpty()
 	sm1.Scope().SetName("otelcol/metricsinferenceprocessor")
 	sm1.Scope().SetVersion("0.0.1")
-	
+
 	// CPU utilization gauge metric
 	cpuMetric := sm1.Metrics().AppendEmpty()
 	cpuMetric.SetName("system.cpu.utilization")
 	cpuMetric.SetUnit("1")
 	cpuGauge := cpuMetric.SetEmptyGauge()
-	
+
 	// Multiple data points with different CPU core attributes
 	cores := []string{"0", "1", "2", "3"}
 	values := []float64{0.45, 0.67, 0.23, 0.89}
-	
+
 	for i, core := range cores {
 		dp := cpuGauge.DataPoints().AppendEmpty()
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
@@ -263,7 +263,7 @@ func GenerateComplexTestMetrics() pmetric.Metrics {
 		dp.Attributes().PutStr("cpu", core)
 		dp.Attributes().PutStr("state", "user")
 	}
-	
+
 	// Memory usage sum metric
 	memMetric := sm1.Metrics().AppendEmpty()
 	memMetric.SetName("system.memory.usage")
@@ -271,20 +271,20 @@ func GenerateComplexTestMetrics() pmetric.Metrics {
 	memSum := memMetric.SetEmptySum()
 	memSum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	memSum.SetIsMonotonic(false)
-	
+
 	memDp := memSum.DataPoints().AppendEmpty()
 	memDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	memDp.SetIntValue(8589934592) // 8GB in bytes
 	memDp.Attributes().PutStr("state", "used")
-	
+
 	// Second resource with different metrics
 	rm2 := md.ResourceMetrics().AppendEmpty()
 	rm2.Resource().Attributes().PutStr("host.name", "host2")
 	rm2.Resource().Attributes().PutStr("service.name", "test-service")
-	
+
 	sm2 := rm2.ScopeMetrics().AppendEmpty()
 	sm2.Scope().SetName("otelcol/metricsinferenceprocessor")
-	
+
 	// Network I/O counter
 	netMetric := sm2.Metrics().AppendEmpty()
 	netMetric.SetName("system.network.io")
@@ -292,10 +292,10 @@ func GenerateComplexTestMetrics() pmetric.Metrics {
 	netSum := netMetric.SetEmptySum()
 	netSum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	netSum.SetIsMonotonic(true)
-	
+
 	interfaces := []string{"eth0", "eth1"}
 	directions := []string{"receive", "transmit"}
-	
+
 	for _, iface := range interfaces {
 		for _, dir := range directions {
 			dp := netSum.DataPoints().AppendEmpty()
@@ -305,7 +305,7 @@ func GenerateComplexTestMetrics() pmetric.Metrics {
 			dp.Attributes().PutStr("direction", dir)
 		}
 	}
-	
+
 	return md
 }
 
@@ -314,7 +314,7 @@ func GetSampleMetricsForInference() pmetric.Metrics {
 	return GenerateTestMetrics(TestMetric{
 		MetricNames: []string{
 			"system.cpu.utilization",
-			"system.memory.utilization", 
+			"system.memory.utilization",
 			"system.disk.utilization",
 			"system.network.packets",
 		},

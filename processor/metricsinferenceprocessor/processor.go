@@ -261,8 +261,8 @@ func (mp *metricsinferenceprocessor) queryModelMetadata(ctx context.Context) err
 
 		resp, err := mp.grpcClient.ModelMetadata(metadataCtx, metadataReq)
 		if err != nil {
-			mp.logger.Warn("Failed to query metadata for model", 
-				zap.String("model", modelName), 
+			mp.logger.Warn("Failed to query metadata for model",
+				zap.String("model", modelName),
 				zap.Error(err))
 			continue
 		}
@@ -297,24 +297,24 @@ func (mp *metricsinferenceprocessor) validateRuleInputs(rule internalRule, input
 	// Check if we have metadata for this model
 	metadata, hasMetadata := mp.modelMetadata[rule.modelName]
 	if !hasMetadata {
-		mp.logger.Debug("No metadata available for input validation", 
+		mp.logger.Debug("No metadata available for input validation",
 			zap.String("model", rule.modelName))
 		return nil // Skip validation if no metadata available
 	}
-	
+
 	// Skip validation if model metadata has no input specifications
 	if len(metadata.inputs) == 0 {
 		mp.logger.Debug("Model metadata has no input specifications, skipping input validation",
 			zap.String("model", rule.modelName))
 		return nil
 	}
-	
+
 	// Check if the number of inputs matches
 	if len(rule.inputs) != len(metadata.inputs) {
-		return fmt.Errorf("model %s expects %d inputs but rule defines %d inputs", 
+		return fmt.Errorf("model %s expects %d inputs but rule defines %d inputs",
 			rule.modelName, len(metadata.inputs), len(rule.inputs))
 	}
-	
+
 	// Validate each input against model expectations
 	for i, inputName := range rule.inputs {
 		// Get the actual metric
@@ -322,27 +322,27 @@ func (mp *metricsinferenceprocessor) validateRuleInputs(rule internalRule, input
 		if !exists {
 			return fmt.Errorf("input metric %s not found in metrics batch", inputName)
 		}
-		
+
 		// Get expected input metadata (assume inputs are in order)
 		if i >= len(metadata.inputs) {
-			return fmt.Errorf("rule input %d (%s) exceeds model's expected inputs (%d)", 
+			return fmt.Errorf("rule input %d (%s) exceeds model's expected inputs (%d)",
 				i, inputName, len(metadata.inputs))
 		}
-		
+
 		expectedInput := metadata.inputs[i]
-		
+
 		// Validate data type compatibility
 		err := mp.validateInputDataType(metric, expectedInput, inputName)
 		if err != nil {
 			return fmt.Errorf("input %s validation failed: %w", inputName, err)
 		}
-		
+
 		// Validate shape compatibility
 		err = mp.validateInputShape(metric, expectedInput, inputName)
 		if err != nil {
 			return fmt.Errorf("input %s shape validation failed: %w", inputName, err)
 		}
-		
+
 		mp.logger.Debug("Input validation passed",
 			zap.String("model", rule.modelName),
 			zap.String("input", inputName),
@@ -350,7 +350,7 @@ func (mp *metricsinferenceprocessor) validateRuleInputs(rule internalRule, input
 			zap.String("expected_type", expectedInput.Datatype),
 			zap.Int64s("expected_shape", expectedInput.Shape))
 	}
-	
+
 	return nil
 }
 
@@ -373,7 +373,7 @@ func (mp *metricsinferenceprocessor) validateInputDataType(metric pmetric.Metric
 			return fmt.Errorf("gauge metric %s has no data points", inputName)
 		}
 	case pmetric.MetricTypeSum:
-		// Sum can be int or double - check first data point  
+		// Sum can be int or double - check first data point
 		sum := metric.Sum()
 		if sum.DataPoints().Len() > 0 {
 			dp := sum.DataPoints().At(0)
@@ -391,14 +391,14 @@ func (mp *metricsinferenceprocessor) validateInputDataType(metric pmetric.Metric
 	default:
 		return fmt.Errorf("unsupported metric type %v for input %s", metric.Type(), inputName)
 	}
-	
+
 	// Check compatibility
 	compatible := mp.isDataTypeCompatible(metricDataType, expectedInput.Datatype)
 	if !compatible {
-		return fmt.Errorf("metric data type %s is not compatible with expected tensor type %s", 
+		return fmt.Errorf("metric data type %s is not compatible with expected tensor type %s",
 			metricDataType, expectedInput.Datatype)
 	}
-	
+
 	return nil
 }
 
@@ -417,21 +417,21 @@ func (mp *metricsinferenceprocessor) validateInputShape(metric pmetric.Metric, e
 	default:
 		return fmt.Errorf("unsupported metric type for shape validation: %v", metric.Type())
 	}
-	
+
 	// Check if expected shape is compatible
 	// For variable dimensions (-1), we accept any size
 	// For fixed dimensions, we need exact match
 	if len(expectedInput.Shape) == 0 {
 		// Scalar expected - metric should have exactly 1 data point
 		if dataPointCount != 1 {
-			return fmt.Errorf("model expects scalar input but metric %s has %d data points", 
+			return fmt.Errorf("model expects scalar input but metric %s has %d data points",
 				inputName, dataPointCount)
 		}
 	} else if len(expectedInput.Shape) == 1 {
 		// 1D tensor expected
 		expectedSize := expectedInput.Shape[0]
 		if expectedSize != -1 && expectedSize != int64(dataPointCount) {
-			return fmt.Errorf("model expects 1D tensor of size %d but metric %s has %d data points", 
+			return fmt.Errorf("model expects 1D tensor of size %d but metric %s has %d data points",
 				expectedSize, inputName, dataPointCount)
 		}
 	} else {
@@ -441,7 +441,7 @@ func (mp *metricsinferenceprocessor) validateInputShape(metric pmetric.Metric, e
 			zap.Int64s("expected_shape", expectedInput.Shape),
 			zap.Int("metric_data_points", dataPointCount))
 	}
-	
+
 	return nil
 }
 
@@ -568,20 +568,20 @@ func (mp *metricsinferenceprocessor) processMetrics(ctx context.Context, md pmet
 					// Invalid selector, skip this input
 					continue
 				}
-				
+
 				// For backward compatibility, check if this is a simple metric name
 				if len(selector.labels) == 0 {
 					// No label filters, use simple name matching
 					if metric, exists := metricMap[selector.metricName]; exists {
 						ruleContexts[ruleIdx].inputs[inputName] = metric
-						
+
 						// Set ResourceMetrics context for this rule (use first input's context)
 						if !ruleContexts[ruleIdx].hasContext {
 							ruleContexts[ruleIdx].resourceMetrics = rm
 							ruleContexts[ruleIdx].scopeMetrics = metricToScopeMap[selector.metricName]
 							ruleContexts[ruleIdx].hasContext = true
 						}
-						
+
 						// Collect data points for attribute copying
 						dataPoints := extractDataPoints(metric)
 						ruleContexts[ruleIdx].inputDataPoints[inputName] = dataPoints
@@ -593,14 +593,14 @@ func (mp *metricsinferenceprocessor) processMetrics(ctx context.Context, md pmet
 							// Filter the metric to only include matching data points
 							filteredMetric := filterMetricByLabels(metric, selector.labels)
 							ruleContexts[ruleIdx].inputs[inputName] = filteredMetric
-							
+
 							// Set ResourceMetrics context for this rule (use first input's context)
 							if !ruleContexts[ruleIdx].hasContext {
 								ruleContexts[ruleIdx].resourceMetrics = rm
 								ruleContexts[ruleIdx].scopeMetrics = metricToScopeMap[metricName]
 								ruleContexts[ruleIdx].hasContext = true
 							}
-							
+
 							// Collect data points for attribute copying
 							dataPoints := extractDataPoints(filteredMetric)
 							ruleContexts[ruleIdx].inputDataPoints[inputName] = dataPoints
@@ -617,7 +617,7 @@ func (mp *metricsinferenceprocessor) processMetrics(ctx context.Context, md pmet
 		modelName := ruleCtx.rule.modelName
 		expectedInputs := len(ruleCtx.rule.inputs)
 		foundInputs := len(ruleCtx.inputs)
-		
+
 		if foundInputs == 0 {
 			mp.logger.Warn("No input metrics found for inference rule",
 				zap.String("model", modelName),
@@ -626,7 +626,7 @@ func (mp *metricsinferenceprocessor) processMetrics(ctx context.Context, md pmet
 				zap.String("suggestion", "Verify metric names exist in the data pipeline"))
 			continue
 		}
-		
+
 		if foundInputs < expectedInputs {
 			// Log which specific metrics are missing
 			missingInputs := make([]string, 0)
@@ -764,13 +764,13 @@ func (mp *metricsinferenceprocessor) createModelInferRequest(modelName string, i
 		if err != nil {
 			return nil, fmt.Errorf("failed to align data points: %w", err)
 		}
-		
+
 		// Create tensors from aligned data points, applying data handling mode
 		for _, inputName := range rule.inputs {
 			if dataPoints, exists := alignedDataPoints[inputName]; exists && len(dataPoints) > 0 {
 				contents := &pb.InferTensorContents{}
 				var selectedDataPoints []pmetric.NumberDataPoint
-				
+
 				// Apply data handling mode to the aligned data points
 				switch mp.config.DataHandling.Mode {
 				case "latest", "":
@@ -788,7 +788,7 @@ func (mp *metricsinferenceprocessor) createModelInferRequest(modelName string, i
 					}
 					selectedDataPoints = dataPoints[startIdx:]
 				}
-				
+
 				// Convert selected data points to tensor contents
 				for _, dp := range selectedDataPoints {
 					switch dp.ValueType() {
@@ -798,7 +798,7 @@ func (mp *metricsinferenceprocessor) createModelInferRequest(modelName string, i
 						contents.Fp64Contents = append(contents.Fp64Contents, dp.DoubleValue())
 					}
 				}
-				
+
 				tensor := &pb.ModelInferRequest_InferInputTensor{
 					Name:     inputName,
 					Datatype: "FP64",
@@ -827,7 +827,7 @@ func (mp *metricsinferenceprocessor) createModelInferRequest(modelName string, i
 				}
 			}
 		}
-		
+
 		if skipAttributeMatching || mp.config.DataHandling.Mode == "all" {
 			// Single input without discriminating attributes or "all" mode - pass through all data points
 			for name, metric := range inputs {
@@ -864,7 +864,7 @@ func hasDiscriminatingAttributes(metric pmetric.Metric) bool {
 	if len(dataPoints) <= 1 {
 		return false
 	}
-	
+
 	// Compare attribute sets to see if they differ
 	firstAttrsKey := attributeSetKey(dataPoints[0].Attributes())
 	for i := 1; i < len(dataPoints); i++ {
@@ -880,14 +880,14 @@ func attributeSetKey(attrs pcommon.Map) string {
 	if attrs.Len() == 0 {
 		return ""
 	}
-	
+
 	// Create a sorted list of key=value pairs for consistent keys
 	var pairs []string
 	attrs.Range(func(k string, v pcommon.Value) bool {
 		pairs = append(pairs, fmt.Sprintf("%s=%s", k, v.AsString()))
 		return true
 	})
-	
+
 	// Sort to ensure consistent ordering
 	sort.Strings(pairs)
 	return strings.Join(pairs, ",")
@@ -902,25 +902,25 @@ func attributeSetsEqual(a, b pcommon.Map) bool {
 func matchDataPointsByAttributes(inputs map[string]pmetric.Metric, rule internalRule) []dataPointGroup {
 	// Step 1: Group data points by attribute sets for each input metric
 	inputGroups := make(map[string]map[string][]pmetric.NumberDataPoint) // metric name -> attribute key -> data points
-	
+
 	for _, inputName := range rule.inputs {
 		if metric, exists := inputs[inputName]; exists {
 			inputGroups[inputName] = make(map[string][]pmetric.NumberDataPoint)
 			dataPoints := extractDataPoints(metric)
-			
+
 			for _, dp := range dataPoints {
 				attrKey := attributeSetKey(dp.Attributes())
 				inputGroups[inputName][attrKey] = append(inputGroups[inputName][attrKey], dp)
 			}
 		}
 	}
-	
+
 	// Step 2: Identify inputs for broadcast semantics
 	// An input is a broadcast candidate if it has only one data point group
 	// regardless of whether it has attributes or not
 	inputsWithMultipleGroups := make(map[string]map[string][]pmetric.NumberDataPoint)
 	inputsWithSingleGroup := make(map[string]pmetric.NumberDataPoint)
-	
+
 	for inputName, groups := range inputGroups {
 		if len(groups) == 1 {
 			// Single group - candidate for broadcast
@@ -935,10 +935,10 @@ func matchDataPointsByAttributes(inputs map[string]pmetric.Metric, rule internal
 			inputsWithMultipleGroups[inputName] = groups
 		}
 	}
-	
+
 	// Step 3: Determine target attribute sets for matching
 	var targetAttrKeys []string
-	
+
 	if len(inputsWithMultipleGroups) == 0 {
 		// All inputs have single groups - use empty key for simple case
 		targetAttrKeys = []string{""}
@@ -951,7 +951,7 @@ func matchDataPointsByAttributes(inputs map[string]pmetric.Metric, rule internal
 				allAttrKeysSet[attrKey] = true
 			}
 		}
-		
+
 		// Find attribute sets that exist in ALL inputs with multiple groups
 		for attrKey := range allAttrKeysSet {
 			existsInAll := true
@@ -965,18 +965,18 @@ func matchDataPointsByAttributes(inputs map[string]pmetric.Metric, rule internal
 				targetAttrKeys = append(targetAttrKeys, attrKey)
 			}
 		}
-		
+
 		// If no common attribute sets, use all unique attribute sets
 		if len(targetAttrKeys) == 0 {
 			for attrKey := range allAttrKeysSet {
 				targetAttrKeys = append(targetAttrKeys, attrKey)
 			}
 		}
-		
+
 		// Sort targetAttrKeys to match the ordering used in tensor creation
 		sort.Strings(targetAttrKeys)
 	}
-	
+
 	// Step 4: Create matched data point groups using broadcast semantics
 	var matchedGroups []dataPointGroup
 	for _, attrKey := range targetAttrKeys {
@@ -984,36 +984,36 @@ func matchDataPointsByAttributes(inputs map[string]pmetric.Metric, rule internal
 			attributes: pcommon.NewMap(),
 			dataPoints: make(map[string]pmetric.NumberDataPoint),
 		}
-		
+
 		// Add data points from inputs with multiple groups (discriminating attributes)
 		for inputName, groups := range inputsWithMultipleGroups {
 			if dataPoints, exists := groups[attrKey]; exists && len(dataPoints) > 0 {
 				dp := dataPoints[0] // Take first data point with these attributes
 				group.dataPoints[inputName] = dp
-				
+
 				// Copy attributes from this data point
 				if group.attributes.Len() == 0 {
 					dp.Attributes().CopyTo(group.attributes)
 				}
 			}
 		}
-		
+
 		// Broadcast inputs with single groups to this attribute set
 		for inputName, dp := range inputsWithSingleGroup {
 			group.dataPoints[inputName] = dp
-			
+
 			// If this is the only input (single input case), copy its attributes
 			if len(inputsWithMultipleGroups) == 0 && group.attributes.Len() == 0 {
 				dp.Attributes().CopyTo(group.attributes)
 			}
 		}
-		
+
 		// Only add group if we have data points for all inputs
 		if len(group.dataPoints) == len(rule.inputs) {
 			matchedGroups = append(matchedGroups, group)
 		}
 	}
-	
+
 	return matchedGroups
 }
 
@@ -1069,7 +1069,7 @@ func (mp *metricsinferenceprocessor) createInferRequestForGroup(modelName string
 // dataPointToTensor converts a single data point to an inference tensor
 func (mp *metricsinferenceprocessor) dataPointToTensor(name string, dp pmetric.NumberDataPoint) (*pb.ModelInferRequest_InferInputTensor, error) {
 	contents := &pb.InferTensorContents{}
-	
+
 	// Extract value from data point
 	switch dp.ValueType() {
 	case pmetric.NumberDataPointValueTypeInt:
@@ -1108,7 +1108,7 @@ func (mp *metricsinferenceprocessor) alignDataPointsByTimestamp(inputs map[strin
 		name      string
 		dataPoint pmetric.NumberDataPoint
 	}
-	
+
 	var allDataPoints []timestampedDataPoint
 	for name, metric := range inputs {
 		dataPoints := extractDataPoints(metric)
@@ -1128,7 +1128,7 @@ func (mp *metricsinferenceprocessor) alignDataPointsByTimestamp(inputs map[strin
 
 	// Group data points by timestamp (within tolerance)
 	alignedGroups := make(map[uint64]map[string]pmetric.NumberDataPoint)
-	
+
 	for _, tdp := range allDataPoints {
 		// Find a group within tolerance
 		var groupTimestamp uint64
@@ -1140,12 +1140,12 @@ func (mp *metricsinferenceprocessor) alignDataPointsByTimestamp(inputs map[strin
 				break
 			}
 		}
-		
+
 		if !found {
 			groupTimestamp = tdp.timestamp
 			alignedGroups[groupTimestamp] = make(map[string]pmetric.NumberDataPoint)
 		}
-		
+
 		// Add data point to group (keep the latest if multiple for same metric)
 		alignedGroups[groupTimestamp][tdp.name] = tdp.dataPoint
 	}
@@ -1153,7 +1153,7 @@ func (mp *metricsinferenceprocessor) alignDataPointsByTimestamp(inputs map[strin
 	// Find complete groups (having all required inputs)
 	result := make(map[string][]pmetric.NumberDataPoint)
 	requiredInputs := len(inputs)
-	
+
 	// Sort timestamps to process in order
 	var timestamps []uint64
 	for ts := range alignedGroups {
@@ -1216,7 +1216,7 @@ func (mp *metricsinferenceprocessor) metricToInferInputTensorWithMatching(name s
 
 	// Extract only the data points that are in matched groups for this metric
 	contents := &pb.InferTensorContents{}
-	
+
 	for _, group := range context.matchedDataPoints {
 		if dataPoint, exists := group.dataPoints[name]; exists {
 			switch dataPoint.ValueType() {
@@ -1292,12 +1292,12 @@ func (mp *metricsinferenceprocessor) gaugeToTensor(name string, metric pmetric.M
 		if windowSize <= 0 {
 			windowSize = 1
 		}
-		
+
 		startIdx := dps.Len() - windowSize
 		if startIdx < 0 {
 			startIdx = 0
 		}
-		
+
 		for i := startIdx; i < dps.Len(); i++ {
 			dp := dps.At(i)
 			switch dp.ValueType() {
@@ -1364,12 +1364,12 @@ func (mp *metricsinferenceprocessor) sumToTensor(name string, metric pmetric.Met
 		if windowSize <= 0 {
 			windowSize = 1
 		}
-		
+
 		startIdx := dps.Len() - windowSize
 		if startIdx < 0 {
 			startIdx = 0
 		}
-		
+
 		for i := startIdx; i < dps.Len(); i++ {
 			dp := dps.At(i)
 			switch dp.ValueType() {
@@ -1554,7 +1554,7 @@ func (mp *metricsinferenceprocessor) processInferenceResponse(md pmetric.Metrics
 	// Use the ResourceMetrics and ScopeMetrics from the input context
 	var rm pmetric.ResourceMetrics
 	var sm pmetric.ScopeMetrics
-	
+
 	if context.hasContext {
 		// Use the ResourceMetrics from the input context
 		rm = context.resourceMetrics
@@ -1614,7 +1614,7 @@ func (mp *metricsinferenceprocessor) processInferenceResponse(md pmetric.Metrics
 				metricName = fmt.Sprintf("%s_output_%d", rule.modelName, outputIdx)
 			}
 		}
-		
+
 		// Apply naming strategy: output pattern if exists, otherwise intelligent naming
 		if !outputSpec.discovered {
 			// For explicitly configured outputs, apply naming strategy
@@ -1623,8 +1623,8 @@ func (mp *metricsinferenceprocessor) processInferenceResponse(md pmetric.Metrics
 				evaluator := NewPatternEvaluator(rule.outputPattern, &rule)
 				decoratedName, err := evaluator.Evaluate(metricName)
 				if err != nil {
-					mp.logger.Warn("Failed to evaluate output pattern, falling back to intelligent naming", 
-						zap.String("pattern", rule.outputPattern), 
+					mp.logger.Warn("Failed to evaluate output pattern, falling back to intelligent naming",
+						zap.String("pattern", rule.outputPattern),
 						zap.Error(err))
 					metricName = mp.defaultDecorateOutputName(&rule, metricName, outputIdx)
 				} else {
@@ -1636,7 +1636,7 @@ func (mp *metricsinferenceprocessor) processInferenceResponse(md pmetric.Metrics
 			}
 		}
 		// For discovered outputs, intelligent naming was already applied in mergeDiscoveredOutputs
-		
+
 		metric.SetName(metricName)
 
 		// Set description and unit
@@ -1741,7 +1741,7 @@ func buildInternalConfig(config *Config) []internalRule {
 func (mp *metricsinferenceprocessor) mergeDiscoveredOutputs() {
 	for ruleIdx := range mp.rules {
 		rule := &mp.rules[ruleIdx]
-		
+
 		// Check if we have metadata for this model
 		metadata, hasMetadata := mp.modelMetadata[rule.modelName]
 		if !hasMetadata {
@@ -1771,11 +1771,11 @@ func (mp *metricsinferenceprocessor) mergeDiscoveredOutputs() {
 			// Merge configured outputs with discovered metadata
 			for outputIdx := range rule.outputs {
 				output := &rule.outputs[outputIdx]
-				
+
 				// If output index is specified, use metadata from that index
 				if output.outputIndex != nil && *output.outputIndex < len(metadata.outputs) {
 					metaOutput := metadata.outputs[*output.outputIndex]
-					
+
 					// Use discovered name if not configured
 					if output.name == "" || output.name == fmt.Sprintf("%s_output_%d", rule.modelName, outputIdx) {
 						output.name = metaOutput.Name
@@ -1784,7 +1784,7 @@ func (mp *metricsinferenceprocessor) mergeDiscoveredOutputs() {
 							zap.Int("index", *output.outputIndex),
 							zap.String("name", metaOutput.Name))
 					}
-					
+
 					// Use discovered data type if not configured
 					if output.dataType == "" {
 						output.dataType = convertKServeDataType(metaOutput.Datatype)
@@ -1804,14 +1804,14 @@ func (mp *metricsinferenceprocessor) decorateOutputName(rule *internalRule, outp
 		name, err := evaluator.Evaluate(outputName)
 		if err != nil {
 			// Log error and fall back to default behavior
-			mp.logger.Warn("Failed to evaluate output pattern", 
-				zap.String("pattern", rule.outputPattern), 
+			mp.logger.Warn("Failed to evaluate output pattern",
+				zap.String("pattern", rule.outputPattern),
 				zap.Error(err))
 			return mp.defaultDecorateOutputName(rule, outputName, outputIndex)
 		}
 		return name
 	}
-	
+
 	// Use new default naming strategy
 	return mp.defaultDecorateOutputName(rule, outputName, outputIndex)
 }
@@ -1825,7 +1825,6 @@ func (mp *metricsinferenceprocessor) defaultDecorateOutputName(rule *internalRul
 	}
 	return GenerateIntelligentName(rule.inputs, outputName, rule.modelName, namingConfig)
 }
-
 
 // convertKServeDataType converts KServe data types to internal types
 func convertKServeDataType(kserveType string) string {
@@ -1935,21 +1934,20 @@ func (mp *metricsinferenceprocessor) processOutputTensor(metric pmetric.Metric, 
 	return nil
 }
 
-
 // copyAttributesFromDataPointGroup copies attributes from the specific matched data point group to the output data point
 // and adds inference metadata labels (model name and version only)
 func copyAttributesFromDataPointGroup(outputDP pmetric.NumberDataPoint, context *modelContext, dataPointIndex int) {
 	if context == nil {
 		return
 	}
-	
+
 	attrs := outputDP.Attributes()
-	
+
 	// Copy attributes from the matched data point group with namespacing
 	if len(context.matchedDataPoints) > dataPointIndex {
 		// Use the matched data point groups for correct attribute mapping
 		group := context.matchedDataPoints[dataPointIndex]
-		
+
 		// For each input metric in the group
 		for inputName, dataPoint := range group.dataPoints {
 			// Copy each attribute with the input metric name as prefix
@@ -1973,7 +1971,7 @@ func copyAttributesFromDataPointGroup(outputDP pmetric.NumberDataPoint, context 
 			}
 		}
 	}
-	
+
 	// Add inference metadata labels (model name and version only - no status)
 	attrs.PutStr(labelInferenceModelName, context.rule.modelName)
 	if context.rule.modelVersion != "" {
@@ -1984,7 +1982,7 @@ func copyAttributesFromDataPointGroup(outputDP pmetric.NumberDataPoint, context 
 // extractDataPoints extracts all NumberDataPoints from a metric for attribute copying
 func extractDataPoints(metric pmetric.Metric) []pmetric.NumberDataPoint {
 	var dataPoints []pmetric.NumberDataPoint
-	
+
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		gauge := metric.Gauge()
@@ -2016,6 +2014,6 @@ func extractDataPoints(metric pmetric.Metric) []pmetric.NumberDataPoint {
 			// For now, we'll skip summary metrics for attribute copying
 		}
 	}
-	
+
 	return dataPoints
 }

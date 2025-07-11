@@ -305,8 +305,8 @@ func TestMetricsInferenceProcessor(t *testing.T) {
 			name: "metrics_generation_rule_scale",
 			rules: []Rule{
 				{
-					ModelName: "scale_5",
-					Inputs:    []string{"metric_1"},
+					ModelName:     "scale_5",
+					Inputs:        []string{"metric_1"},
 					OutputPattern: "{output}",
 					Outputs: []OutputSpec{
 						{Name: "metric_1_scaled"},
@@ -326,8 +326,8 @@ func TestMetricsInferenceProcessor(t *testing.T) {
 			name: "metrics_generation_rule_calculate_divide",
 			rules: []Rule{
 				{
-					ModelName: "calculate_divide",
-					Inputs:    []string{"metric_1", "metric_2"},
+					ModelName:     "calculate_divide",
+					Inputs:        []string{"metric_1", "metric_2"},
 					OutputPattern: "{output}", // Use explicit output pattern
 					Outputs: []OutputSpec{
 						{Name: "metric_1_calculated_divide"},
@@ -347,8 +347,8 @@ func TestMetricsInferenceProcessor(t *testing.T) {
 			name: "metrics_generation_rule_calculate_add",
 			rules: []Rule{
 				{
-					ModelName: "calculate_add",
-					Inputs:    []string{"metric_1", "metric_2"},
+					ModelName:     "calculate_add",
+					Inputs:        []string{"metric_1", "metric_2"},
 					OutputPattern: "{output}", // Use explicit output pattern
 					Outputs: []OutputSpec{
 						{Name: "metric_1_calculated_add"},
@@ -368,8 +368,8 @@ func TestMetricsInferenceProcessor(t *testing.T) {
 			name: "metrics_generation_int_gauge_test",
 			rules: []Rule{
 				{
-					ModelName: "calculate_add",
-					Inputs:    []string{"metric_1", "metric_2"},
+					ModelName:     "calculate_add",
+					Inputs:        []string{"metric_1", "metric_2"},
 					OutputPattern: "{output}", // Use explicit output pattern
 					Outputs: []OutputSpec{
 						{Name: "metric_calculated"},
@@ -655,7 +655,7 @@ func TestGoldenFileMetrics(t *testing.T) {
 						},
 					},
 				})
-			
+
 			// Input metric types tests
 			case "sum_gauge_inference":
 				mockServer.SetModelResponse("filesystem_prediction", testutil.CreateMockResponseForFilesystem("filesystem_prediction", 52428800000.0))
@@ -665,7 +665,7 @@ func TestGoldenFileMetrics(t *testing.T) {
 				mockServer.SetModelResponse("usage_prediction", testutil.CreateMockResponseForDataType("usage_prediction", "INT64", int64(45036953600)))
 			case "multi_attribute_inference":
 				mockServer.SetModelResponse("capacity_anomaly_detection", testutil.CreateMockResponseForMultipleOutputs("capacity_anomaly_detection", []float64{0.15, 0.0}))
-			
+
 			// Multi-model tests
 			case "multiple_models_same_input":
 				mockServer.SetModelResponse("cpu_anomaly_detector", testutil.CreateMockResponseForScaling("cpu_anomaly_detector", 1.1, 0.75))
@@ -680,7 +680,7 @@ func TestGoldenFileMetrics(t *testing.T) {
 			case "model_versioning":
 				// Set up responses for both model versions
 				mockServer.SetModelResponse("cpu_model", testutil.CreateMockResponseForScaling("cpu_model", 1.1, 0.75))
-			
+
 			// Data types tests
 			case "float_output":
 				mockServer.SetModelResponse("float_prediction_model", testutil.CreateMockResponseForDataType("float_prediction_model", "FP32", float32(0.85)))
@@ -697,7 +697,7 @@ func TestGoldenFileMetrics(t *testing.T) {
 				mockServer.SetModelResponse("mixed_types_model", testutil.CreateMockResponseForMixedTypes("mixed_types_model", values))
 			case "int_gauge_input":
 				mockServer.SetModelResponse("int_input_model", testutil.CreateMockResponseForDataType("int_input_model", "INT64", int64(1100)))
-			
+
 			// Error handling tests
 			case "server_error":
 				mockServer.SetModelError("failing_model", testutil.CreateMockErrorResponse(codes.Internal, "model inference failed"))
@@ -758,14 +758,14 @@ func TestGoldenFileMetrics(t *testing.T) {
 
 			got := next.AllMetrics()
 			expectedFilePath := filepath.Join("testdata", testCase.TestDir, fmt.Sprintf("%s_%s", testCase.Name, "expected.yaml"))
-			
+
 			// Uncomment the following line to generate expected files during development
 			// golden.WriteMetrics(t, expectedFilePath, got[0])
-			
+
 			expected, err := golden.ReadMetrics(expectedFilePath)
 			assert.NoError(t, err)
 			assert.Len(t, got, 1)
-			
+
 			err = pmetrictest.CompareMetrics(expected, got[0],
 				pmetrictest.IgnoreMetricDataPointsOrder(),
 				pmetrictest.IgnoreMetricsOrder(),

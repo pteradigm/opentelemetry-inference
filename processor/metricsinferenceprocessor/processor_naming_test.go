@@ -19,11 +19,11 @@ import (
 
 func TestProcessorNamingStrategies(t *testing.T) {
 	tests := []struct {
-		name           string
-		rules          []Rule
-		mockResponses  map[string]*pb.ModelInferResponse
-		expectedNames  map[string]bool // Map of expected metric names
-		description    string
+		name          string
+		rules         []Rule
+		mockResponses map[string]*pb.ModelInferResponse
+		expectedNames map[string]bool // Map of expected metric names
+		description   string
 	}{
 		// Tests using intelligent naming (no output pattern)
 		{
@@ -82,7 +82,7 @@ func TestProcessorNamingStrategies(t *testing.T) {
 				"scaler": testutil.CreateMockResponseForScaling("scaler", 2.0, 50.0),
 			},
 			expectedNames: map[string]bool{
-				"system.cpu.utilization":    true,
+				"system.cpu.utilization": true,
 				"cpu_utilization.scaled": true, // Intelligent naming shortens the input
 			},
 			description: "Dots in input names should be converted to underscores",
@@ -125,8 +125,8 @@ func TestProcessorNamingStrategies(t *testing.T) {
 				"anomaly_v2": testutil.CreateMockResponseForScaling("anomaly_v2", 1.0, 0.25),
 			},
 			expectedNames: map[string]bool{
-				"cpu.usage":       true,
-				"memory.usage":    true,
+				"cpu.usage":        true,
+				"memory.usage":     true,
 				"anomaly_v2.score": true, // Pattern with model name
 			},
 			description: "Output pattern with {model} placeholder",
@@ -147,7 +147,7 @@ func TestProcessorNamingStrategies(t *testing.T) {
 				"scaler": testutil.CreateMockResponseForScaling("scaler", 10.0, 1000.0),
 			},
 			expectedNames: map[string]bool{
-				"network.throughput":                    true,
+				"network.throughput":                 true,
 				"network.throughput.scaled_by_model": true, // Pattern with input name
 			},
 			description: "Output pattern with {input} placeholder",
@@ -180,8 +180,8 @@ func TestProcessorNamingStrategies(t *testing.T) {
 			expectedNames: map[string]bool{
 				"cpu.usage":            true,
 				"memory.usage":         true,
-				"cpu_usage.prediction": true,        // Intelligent naming
-				"scaled.memory.usage":  true,        // Pattern-based naming
+				"cpu_usage.prediction": true, // Intelligent naming
+				"scaled.memory.usage":  true, // Pattern-based naming
 			},
 			description: "Mix of intelligent and pattern-based naming",
 		},
@@ -220,7 +220,7 @@ func TestProcessorNamingStrategies(t *testing.T) {
 			md := pmetric.NewMetrics()
 			rm := md.ResourceMetrics().AppendEmpty()
 			sm := rm.ScopeMetrics().AppendEmpty()
-			
+
 			// Add all input metrics
 			inputNames := make(map[string]bool)
 			for _, rule := range tt.rules {
@@ -261,15 +261,15 @@ func TestProcessorNamingStrategies(t *testing.T) {
 
 			// Verify expected metrics exist
 			for expectedName := range tt.expectedNames {
-				assert.True(t, actualNames[expectedName], 
-					"%s: Expected metric '%s' not found. Description: %s", 
+				assert.True(t, actualNames[expectedName],
+					"%s: Expected metric '%s' not found. Description: %s",
 					tt.name, expectedName, tt.description)
 			}
 
 			// Verify no unexpected metrics
 			for actualName := range actualNames {
-				assert.True(t, tt.expectedNames[actualName], 
-					"%s: Unexpected metric '%s' found", 
+				assert.True(t, tt.expectedNames[actualName],
+					"%s: Unexpected metric '%s' found",
 					tt.name, actualName)
 			}
 		})

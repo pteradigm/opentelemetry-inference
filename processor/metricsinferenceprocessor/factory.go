@@ -38,14 +38,14 @@ func createDefaultConfig() component.Config {
 			Compression: false,
 			Headers:     nil,
 		},
-		Rules:   nil, // Set to nil instead of empty slice to match test expectations
-		Timeout: 10,  // Default timeout of 10 seconds
+		Rules:   nil,                   // Set to nil instead of empty slice to match test expectations
+		Timeout: 10,                    // Default timeout of 10 seconds
 		Naming:  DefaultNamingConfig(), // Use intelligent naming by default
 		DataHandling: DataHandlingConfig{
-			Mode:               "latest",  // Default to real-time processing
-			WindowSize:         1,         // Default window size
-			AlignTimestamps:    true,      // Default to temporal alignment
-			TimestampTolerance: 1000,      // 1 second tolerance
+			Mode:               "latest", // Default to real-time processing
+			WindowSize:         1,        // Default window size
+			AlignTimestamps:    true,     // Default to temporal alignment
+			TimestampTolerance: 1000,     // 1 second tolerance
 		},
 	}
 }
