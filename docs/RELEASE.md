@@ -1,19 +1,38 @@
 # Release Process
 
-This project uses [semantic-release](https://semantic-release.gitbook.io/) for automated versioning and releases.
+This project uses [semantic-release](https://semantic-release.gitbook.io/) for automated versioning and releases with a unified CI/CD strategy.
 
 ## How It Works
 
-1. Commits to `main` trigger the release workflow
-2. Semantic-release analyzes commit messages to determine version bump:
+The release process is part of a 3-workflow CI/CD pipeline:
+
+### 1. CI Workflow Validation
+- Every push and PR triggers comprehensive CI checks
+- Linting, testing, building, and integration tests must pass
+- Binary artifacts are uploaded for the release workflow
+
+### 2. Automated Release Process
+- Release workflow triggers only after successful CI completion
+- Semantic-release analyzes commit messages to determine version bump:
    - `feat:` → minor version (1.x.0)
-   - `fix:` → patch version (1.0.x)
+   - `fix:`, `perf:`, `refactor:` → patch version (1.0.x)
    - `BREAKING CHANGE:` → major version (x.0.0)
-3. Automatically:
+   - `docs:`, `test:`, `ci:`, `chore:` → no release
+- Automatically:
    - Creates GitHub release with changelog
-   - Builds and pushes Docker images to GHCR
+   - Attaches binary artifacts from CI workflow
    - Updates CHANGELOG.md
    - Creates git tag
+   - Triggers Docker build only if new release is created
+
+### 3. Docker Publishing
+- Conditional job that runs only when a new release is published
+- Builds multi-platform ready images (currently linux/amd64)
+- Pushes to GitHub Container Registry (GHCR) with:
+   - Full version tag (e.g., `1.2.3`)
+   - Major version tag (e.g., `1`)
+   - Major.minor tag (e.g., `1.2`)
+   - Latest tag
 
 ## Setup Required
 
