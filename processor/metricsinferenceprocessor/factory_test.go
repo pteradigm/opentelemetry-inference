@@ -37,6 +37,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 		Rules:   nil,
 		Timeout: 10,
 		Naming:  DefaultNamingConfig(),
+		DataHandling: DataHandlingConfig{
+			Mode:               "latest",
+			WindowSize:         1,
+			AlignTimestamps:    true,
+			TimestampTolerance: 1000,
+		},
 	}
 	assert.Equal(t, expected, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))

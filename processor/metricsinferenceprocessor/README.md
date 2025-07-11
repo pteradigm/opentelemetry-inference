@@ -96,6 +96,13 @@ processors:
       enable_category_grouping: true  # Group by categories when many inputs
       abbreviation_threshold: 4  # Number of inputs before abbreviation
     
+    # Data handling configuration for real-time processing (optional)
+    data_handling:
+      mode: "latest"             # How to handle data points: "latest", "window", "all"
+      window_size: 5             # Number of points when mode is "window"
+      align_timestamps: true     # Ensure temporal alignment across inputs
+      timestamp_tolerance: 1000  # Max time difference in ms for alignment
+    
     # Inference rules - process metrics through ML models
     rules:
       # Simple scaling model example
@@ -129,6 +136,7 @@ processors:
 | `grpc.compression` | bool | No | Enable gRPC compression (default: true) |
 | `timeout` | int | No | Timeout for inference requests in seconds (default: 30) |
 | `naming` | NamingConfig | No | Configuration for output metric naming (see below) |
+| `data_handling` | DataHandlingConfig | No | Configuration for data point processing (see below) |
 | `rules` | []Rule | Yes | List of inference rules |
 
 ### Naming Configuration
@@ -139,6 +147,21 @@ processors:
 | `naming.skip_common_domains` | bool | No | Skip common prefixes (default: true) |
 | `naming.enable_category_grouping` | bool | No | Group by categories (default: true) |
 | `naming.abbreviation_threshold` | int | No | Inputs before abbreviation (default: 4) |
+
+### Data Handling Configuration
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `data_handling.mode` | string | No | Data point handling mode: "latest", "window", or "all" (default: "latest") |
+| `data_handling.window_size` | int | No | Number of recent points to send when mode is "window" (default: 1) |
+| `data_handling.align_timestamps` | bool | No | Enable temporal alignment across inputs (default: true) |
+| `data_handling.timestamp_tolerance` | int64 | No | Max time difference in ms for alignment (default: 1000) |
+
+**Data Handling Modes:**
+
+- **`latest`** (default): Send only the most recent data point for real-time processing
+- **`window`**: Send the last N data points (sliding window) as configured by window_size
+- **`all`**: Send all accumulated data points (batch processing, original behavior)
 
 ### Rule Configuration
 

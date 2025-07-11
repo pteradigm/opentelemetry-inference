@@ -13,17 +13,14 @@ protodot:
 
 .PHONY: test
 test:
-	go test -v ./...
-
-.PHONY: test-unit
-test-unit:
 	@echo "Running unit tests..."
 	go test -v ./...
 
+.PHONY: test-unit
+test-unit: test
+
 .PHONY: test-integration
-test-integration:
-	@echo "Running integration tests..."
-	INTEGRATION_TEST=1 go test -tags=integration -v ./...
+test-integration: integration-test-kserve
 
 .PHONY: test-e2e
 test-e2e: testenv-test
@@ -31,8 +28,9 @@ test-e2e: testenv-test
 	cd testenv && ./test-naming-strategies.sh
 
 .PHONY: test-all
-test-all: test-unit test-integration test-e2e
+test-all: test test-integration test-e2e
 	@echo "All tests completed!"
+
 
 .PHONY: test-golden-update
 test-golden-update:

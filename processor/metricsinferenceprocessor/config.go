@@ -23,6 +23,9 @@ type Config struct {
 
 	// Naming configures the naming strategy for output metrics
 	Naming NamingConfig `mapstructure:"naming"`
+
+	// DataHandling configures how metric data points are processed for inference
+	DataHandling DataHandlingConfig `mapstructure:"data_handling"`
 }
 
 // GRPCClientSettings defines the configuration for the gRPC client.
@@ -85,6 +88,24 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	// Validate data handling configuration
+	if cfg.DataHandling.Mode != "" {
+		switch cfg.DataHandling.Mode {
+		case "latest", "window", "all":
+			// Valid modes
+		default:
+			return fmt.Errorf("invalid data_handling.mode: %s (must be 'latest', 'window', or 'all')", cfg.DataHandling.Mode)
+		}
+		
+		if cfg.DataHandling.Mode == "window" && cfg.DataHandling.WindowSize <= 0 {
+			return fmt.Errorf("data_handling.window_size must be positive when mode is 'window'")
+		}
+		
+		if cfg.DataHandling.TimestampTolerance < 0 {
+			return fmt.Errorf("data_handling.timestamp_tolerance must be non-negative")
+		}
+	}
+
 	return nil
 }
 
@@ -138,4 +159,27 @@ type Rule struct {
 
 	// Parameters contains additional parameters to pass to the inference service.
 	Parameters map[string]interface{} `mapstructure:"parameters"`
+}
+
+// DataHandlingConfig defines how metric data points are processed for inference
+type DataHandlingConfig struct {
+	// Mode specifies how to handle metric data points for inference.
+	// Valid values: "latest" (default), "window", "all"
+	// - "latest": Send only the most recent data point (real-time processing)
+	// - "window": Send the last N data points (sliding window)
+	// - "all": Send all accumulated data points (batch processing)
+	Mode string `mapstructure:"mode"`
+
+	// WindowSize specifies the number of recent data points to send when mode is "window".
+	// Default is 1 (equivalent to "latest" mode).
+	WindowSize int `mapstructure:"window_size"`
+
+	// AlignTimestamps ensures temporal alignment across multiple input metrics.
+	// When true, only data points with matching or close timestamps are used together.
+	// Default is true for modes "latest" and "window", false for "all".
+	AlignTimestamps bool `mapstructure:"align_timestamps"`
+
+	// TimestampTolerance specifies the maximum time difference (in milliseconds) between
+	// data points to consider them temporally aligned. Default is 1000 (1 second).
+	TimestampTolerance int64 `mapstructure:"timestamp_tolerance"`
 }
