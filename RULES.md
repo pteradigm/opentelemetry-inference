@@ -218,3 +218,10 @@ The project structure is designed for simplicity and future expansion, with clea
 ## Configuration and Tooling Recommendations
 
 - Use `podman` rather than `docker`
+
+### Python Development Setup
+
+- For simplicity use the Python virtual environment found in the `./.venv` directory at the root of the project. If it doesn't exist, create it with `python -m venv .venv` in the root of the project. Always prepend the path to python or pip e.g., `./.venv/bin/python` and `./.venv/bin/pip` etc.
+
+- **Python Virtual Environment Guidelines**:
+  - The Python virtual environment is in the root of the project and all calls to python and pip should reflect that when they are being run in different directories.

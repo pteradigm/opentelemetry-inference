@@ -62,13 +62,23 @@ run: build
 
 .PHONY: test
 test:
-	@echo "Running processor tests..."
+	@echo "Running processor unit tests..."
 	cd processor/metricsinferenceprocessor && go test -v ./...
 
-.PHONY: integration-test
-integration-test:
+.PHONY: test-integration
+test-integration:
 	@echo "Running KServe integration tests..."
 	cd processor/metricsinferenceprocessor && make integration-test-kserve
+
+.PHONY: test-e2e
+test-e2e:
+	@echo "Running end-to-end tests..."
+	cd processor/metricsinferenceprocessor && make test-e2e
+
+.PHONY: test-all
+test-all: test test-integration test-e2e
+	@echo "All tests completed!"
+
 
 .PHONY: clean
 clean:
@@ -137,8 +147,10 @@ help:
 	@echo "  tidy            - Run go mod tidy in build output"
 	@echo "  install         - Build and install collector to GOPATH/bin"
 	@echo "  run             - Build and run collector with otelcol.yaml"
-	@echo "  test            - Run all processor tests"
-	@echo "  integration-test - Run KServe integration tests"
+	@echo "  test            - Run unit tests"
+	@echo "  test-integration - Run KServe integration tests"
+	@echo "  test-e2e        - Run end-to-end tests"
+	@echo "  test-all        - Run all tests (unit, integration, e2e)"
 	@echo "  clean           - Remove build artifacts"
 	@echo ""
 	@echo "Demo pipeline targets:"

@@ -55,6 +55,12 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Timeout: 10,
 				Naming:  DefaultNamingConfig(),
+				DataHandling: DataHandlingConfig{
+					Mode:               "latest",
+					WindowSize:         1,
+					AlignTimestamps:    true,
+					TimestampTolerance: 1000,
+				},
 			},
 		},
 		{

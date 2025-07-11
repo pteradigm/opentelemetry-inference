@@ -108,16 +108,17 @@ class KalmanFilterModel(MLModel):
         # Moderate uncertainty initially (was 100, now 1.0)
         self.filter.P = np.eye(self.state_dim) * 1.0
         
-        # Initial state
+        # Initial state - will be set from first observation
         self.filter.x = np.array([
-            [0.3],   # 30% CPU utilization
+            [0.0],   # CPU utilization - set from first observation
             [0.0],   # No initial trend
-            [0.5],   # 50% memory utilization
-            [1.0],   # Load average of 1.0
+            [0.0],   # Memory utilization - set from first observation
+            [0.0],   # Load average - set from first observation
             [0.0]    # Normalized context switches
         ], dtype=float)
         
         self.initialized = True
+        self.first_observation = True  # Flag to initialize from first data point
     
     def _preprocess_inputs(self, cpu: np.ndarray, memory: np.ndarray, 
                           load_avg: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -306,6 +307,32 @@ class KalmanFilterModel(MLModel):
             cpu_utilization, memory_utilization, load_average
         )
         
+        # Convert single values to arrays if needed
+        if np.isscalar(cpu_utilization):
+            cpu_utilization = np.array([cpu_utilization])
+        if np.isscalar(memory_utilization):
+            memory_utilization = np.array([memory_utilization])
+        if np.isscalar(load_average):
+            load_average = np.array([load_average])
+            
+        # Ensure arrays
+        cpu_utilization = np.atleast_1d(cpu_utilization)
+        memory_utilization = np.atleast_1d(memory_utilization)
+        load_average = np.atleast_1d(load_average)
+        
+        # Ensure all arrays have the same length
+        min_length = min(len(cpu_utilization), len(memory_utilization), len(load_average))
+        if min_length == 0:
+            raise ValueError("Empty input arrays")
+        
+        # Log array lengths for debugging (only if there's a mismatch)
+        if len(cpu_utilization) != len(memory_utilization) or len(cpu_utilization) != len(load_average):
+            print(f"WARNING: Input arrays have different lengths: cpu={len(cpu_utilization)}, memory={len(memory_utilization)}, load={len(load_average)}")
+            # Trim to minimum length
+            cpu_utilization = cpu_utilization[:min_length]
+            memory_utilization = memory_utilization[:min_length]
+            load_average = load_average[:min_length]
+        
         # Process each observation and collect results
         predictions = []
         variances = []
@@ -313,7 +340,8 @@ class KalmanFilterModel(MLModel):
         trends = []
         confidences = []
         
-        for i in range(len(cpu_utilization)):
+        # Online/Recursive processing - each data point updates the filter state
+        for i in range(min_length):
             # Prepare measurement vector
             measurement = np.array([
                 cpu_utilization[i],
@@ -321,8 +349,23 @@ class KalmanFilterModel(MLModel):
                 load_average[i]
             ])
             
+            # Initialize state from first observation
+            if hasattr(self, 'first_observation') and self.first_observation:
+                self.filter.x[0, 0] = cpu_utilization[i]  # Initialize CPU state
+                self.filter.x[2, 0] = memory_utilization[i]  # Initialize memory state
+                self.filter.x[3, 0] = load_average[i]  # Initialize load average state
+                self.filter.x[1, 0] = 0.0  # Start with zero trend
+                self.filter.x[4, 0] = 0.0  # Start with zero context switches
+                self.first_observation = False
+                print(f"Kalman filter initialized with first observation: CPU={cpu_utilization[i]:.4f}, Memory={memory_utilization[i]:.4f}, Load={load_average[i]:.4f}")
+            
             # Prediction step
             self.filter.predict()
+            
+            # Store the prediction (before update) - this is the actual forecast
+            predicted_cpu = float(self.filter.x[0, 0])  # Predicted CPU utilization
+            cpu_trend = float(self.filter.x[1, 0])     # Predicted CPU trend
+            prediction_variance = float(self.filter.P[0, 0])  # Prediction uncertainty
             
             # Update step with new observations
             self.filter.update(measurement)
@@ -332,10 +375,9 @@ class KalmanFilterModel(MLModel):
             if hasattr(self.filter, 'y') and self.filter.y is not None:
                 self.innovation_window.append(self.filter.y.flatten())
             
-            # Extract results
-            predicted_cpu = float(self.filter.x[0, 0])  # CPU utilization
-            cpu_trend = float(self.filter.x[1, 0])     # CPU trend
-            prediction_variance = float(self.filter.P[0, 0])  # Uncertainty
+            # Log for debugging (first few observations)
+            if self.observation_count <= 5:
+                print(f"Observation {self.observation_count}: measurement={measurement}, predicted={predicted_cpu:.4f}, actual_state_after_update={self.filter.x[0, 0]:.4f}")
             
             # Calculate innovation magnitude
             innovation = float(np.linalg.norm(self.filter.y)) if hasattr(self.filter, 'y') and self.filter.y is not None else 0.0

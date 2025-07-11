@@ -287,6 +287,30 @@ func CreateMockResponseForScaling(modelName string, scaleFactor float64, inputVa
 	}
 }
 
+// CreateMockResponseForScalingArray creates a mock response for scaling operations on arrays
+func CreateMockResponseForScalingArray(modelName string, scaleFactor float64, inputValues []float64) *pb.ModelInferResponse {
+	scaledValues := make([]float64, len(inputValues))
+	for i, v := range inputValues {
+		scaledValues[i] = v * scaleFactor
+	}
+	
+	return &pb.ModelInferResponse{
+		ModelName:    modelName,
+		ModelVersion: "1",
+		Id:           "test-request",
+		Outputs: []*pb.ModelInferResponse_InferOutputTensor{
+			{
+				Name:     "scaled_output",
+				Datatype: "FP64",
+				Shape:    []int64{int64(len(scaledValues))},
+				Contents: &pb.InferTensorContents{
+					Fp64Contents: scaledValues,
+				},
+			},
+		},
+	}
+}
+
 // CreateMockResponseForCalculation creates a mock response for calculation operations
 func CreateMockResponseForCalculation(modelName string, result float64) *pb.ModelInferResponse {
 	return &pb.ModelInferResponse{

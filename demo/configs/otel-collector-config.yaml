@@ -86,11 +86,16 @@ processors:
         time: 30s
         timeout: 10s
     timeout: 30
+    # New data handling configuration for real-time processing
+    data_handling:
+      mode: "latest"          # Send only most recent data point
+      align_timestamps: true  # Ensure temporal alignment
+      timestamp_tolerance: 1000  # 1 second tolerance
     rules:
       # Enhanced Kalman Filter: Multi-feature CPU prediction
-      # Using available metrics: memory utilization and load average
+      # Using actual CPU utilization plus correlated metrics
       - model_name: "kalman-filter"
-        inputs: ["system.memory.utilization", "system.cpu.load_average.15m", "system.cpu.load_average.1m"]
+        inputs: ["system.cpu.utilization", "system.memory.utilization", "system.cpu.load_average.1m"]
         # No outputs configured - will discover from model metadata:
         # cpu_prediction, prediction_variance, innovation, cpu_trend, model_confidence
 

@@ -33,6 +33,14 @@ const (
 	labelInferenceModelVersion = "otel.inference.model.version"
 )
 
+// abs returns the absolute value of an int64
+func abs(x int64) int64 {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
 // modelMetadata holds cached metadata for a model
 type modelMetadata struct {
 	inputs  []*pb.ModelMetadataResponse_TensorMetadata
@@ -749,21 +757,122 @@ func (mp *metricsinferenceprocessor) createModelInferRequest(modelName string, i
 		}
 	}
 
-	// Build matched data point groups for attribute preservation
-	if context != nil {
-		context.matchedDataPoints = matchDataPointsByAttributes(inputs, *rule)
-	}
-
-	// Add each metric as an input tensor using only matched data points
-	for name, metric := range inputs {
-		tensor, err := mp.metricToInferInputTensorWithMatching(name, metric, context)
+	// Handle temporal alignment if enabled
+	if mp.config.DataHandling.AlignTimestamps && mp.config.DataHandling.Mode != "all" {
+		// Align data points by timestamp
+		alignedDataPoints, err := mp.alignDataPointsByTimestamp(inputs)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert metric '%s' to tensor: %w", name, err)
+			return nil, fmt.Errorf("failed to align data points: %w", err)
 		}
-		request.Inputs = append(request.Inputs, tensor)
+		
+		// Create tensors from aligned data points, applying data handling mode
+		for _, inputName := range rule.inputs {
+			if dataPoints, exists := alignedDataPoints[inputName]; exists && len(dataPoints) > 0 {
+				contents := &pb.InferTensorContents{}
+				var selectedDataPoints []pmetric.NumberDataPoint
+				
+				// Apply data handling mode to the aligned data points
+				switch mp.config.DataHandling.Mode {
+				case "latest", "":
+					// Take only the last data point
+					selectedDataPoints = []pmetric.NumberDataPoint{dataPoints[len(dataPoints)-1]}
+				case "window":
+					// Take the last N data points
+					windowSize := mp.config.DataHandling.WindowSize
+					if windowSize <= 0 {
+						windowSize = 1
+					}
+					startIdx := len(dataPoints) - windowSize
+					if startIdx < 0 {
+						startIdx = 0
+					}
+					selectedDataPoints = dataPoints[startIdx:]
+				}
+				
+				// Convert selected data points to tensor contents
+				for _, dp := range selectedDataPoints {
+					switch dp.ValueType() {
+					case pmetric.NumberDataPointValueTypeInt:
+						contents.Fp64Contents = append(contents.Fp64Contents, float64(dp.IntValue()))
+					case pmetric.NumberDataPointValueTypeDouble:
+						contents.Fp64Contents = append(contents.Fp64Contents, dp.DoubleValue())
+					}
+				}
+				
+				tensor := &pb.ModelInferRequest_InferInputTensor{
+					Name:     inputName,
+					Datatype: "FP64",
+					Shape:    []int64{int64(len(selectedDataPoints))},
+					Contents: contents,
+				}
+				request.Inputs = append(request.Inputs, tensor)
+			} else {
+				return nil, fmt.Errorf("no aligned data points found for input '%s'", inputName)
+			}
+		}
+	} else {
+		// Original behavior - use attribute matching or all data points
+		// Skip attribute matching only when appropriate
+		skipAttributeMatching := false
+		if len(inputs) == 1 {
+			// Check if the single input has data points with different attributes
+			for _, metric := range inputs {
+				if hasDiscriminatingAttributes(metric) {
+					// Need attribute matching to preserve distinct data points
+					skipAttributeMatching = false
+					break
+				} else {
+					// No discriminating attributes - can apply data handling modes
+					skipAttributeMatching = true
+				}
+			}
+		}
+		
+		if skipAttributeMatching || mp.config.DataHandling.Mode == "all" {
+			// Single input without discriminating attributes or "all" mode - pass through all data points
+			for name, metric := range inputs {
+				tensor, err := mp.metricToInferInputTensor(name, metric)
+				if err != nil {
+					return nil, fmt.Errorf("failed to convert metric '%s' to tensor: %w", name, err)
+				}
+				request.Inputs = append(request.Inputs, tensor)
+			}
+		} else {
+			// Multiple inputs - use attribute matching for cross-metric alignment
+			// Build matched data point groups for attribute preservation
+			if context != nil {
+				context.matchedDataPoints = matchDataPointsByAttributes(inputs, *rule)
+			}
+
+			// Add each metric as an input tensor using only matched data points
+			for name, metric := range inputs {
+				tensor, err := mp.metricToInferInputTensorWithMatching(name, metric, context)
+				if err != nil {
+					return nil, fmt.Errorf("failed to convert metric '%s' to tensor: %w", name, err)
+				}
+				request.Inputs = append(request.Inputs, tensor)
+			}
+		}
 	}
 
 	return request, nil
+}
+
+// hasDiscriminatingAttributes checks if a metric has data points with different attribute sets
+func hasDiscriminatingAttributes(metric pmetric.Metric) bool {
+	dataPoints := extractDataPoints(metric)
+	if len(dataPoints) <= 1 {
+		return false
+	}
+	
+	// Compare attribute sets to see if they differ
+	firstAttrsKey := attributeSetKey(dataPoints[0].Attributes())
+	for i := 1; i < len(dataPoints); i++ {
+		if attributeSetKey(dataPoints[i].Attributes()) != firstAttrsKey {
+			return true
+		}
+	}
+	return false
 }
 
 // attributeSetKey creates a string key from an attribute map for grouping
@@ -979,6 +1088,125 @@ func (mp *metricsinferenceprocessor) dataPointToTensor(name string, dp pmetric.N
 	}, nil
 }
 
+// alignDataPointsByTimestamp aligns data points from multiple metrics based on their timestamps
+func (mp *metricsinferenceprocessor) alignDataPointsByTimestamp(inputs map[string]pmetric.Metric) (map[string][]pmetric.NumberDataPoint, error) {
+	if !mp.config.DataHandling.AlignTimestamps {
+		// No alignment requested, return all data points
+		result := make(map[string][]pmetric.NumberDataPoint)
+		for name, metric := range inputs {
+			result[name] = extractDataPoints(metric)
+		}
+		return result, nil
+	}
+
+	// Get timestamp tolerance in nanoseconds
+	toleranceNanos := mp.config.DataHandling.TimestampTolerance * 1e6
+
+	// Collect all data points with their timestamps
+	type timestampedDataPoint struct {
+		timestamp uint64
+		name      string
+		dataPoint pmetric.NumberDataPoint
+	}
+	
+	var allDataPoints []timestampedDataPoint
+	for name, metric := range inputs {
+		dataPoints := extractDataPoints(metric)
+		for _, dp := range dataPoints {
+			allDataPoints = append(allDataPoints, timestampedDataPoint{
+				timestamp: uint64(dp.Timestamp()),
+				name:      name,
+				dataPoint: dp,
+			})
+		}
+	}
+
+	// Sort by timestamp
+	sort.Slice(allDataPoints, func(i, j int) bool {
+		return allDataPoints[i].timestamp < allDataPoints[j].timestamp
+	})
+
+	// Group data points by timestamp (within tolerance)
+	alignedGroups := make(map[uint64]map[string]pmetric.NumberDataPoint)
+	
+	for _, tdp := range allDataPoints {
+		// Find a group within tolerance
+		var groupTimestamp uint64
+		found := false
+		for ts := range alignedGroups {
+			if abs(int64(tdp.timestamp-ts)) <= toleranceNanos {
+				groupTimestamp = ts
+				found = true
+				break
+			}
+		}
+		
+		if !found {
+			groupTimestamp = tdp.timestamp
+			alignedGroups[groupTimestamp] = make(map[string]pmetric.NumberDataPoint)
+		}
+		
+		// Add data point to group (keep the latest if multiple for same metric)
+		alignedGroups[groupTimestamp][tdp.name] = tdp.dataPoint
+	}
+
+	// Find complete groups (having all required inputs)
+	result := make(map[string][]pmetric.NumberDataPoint)
+	requiredInputs := len(inputs)
+	
+	// Sort timestamps to process in order
+	var timestamps []uint64
+	for ts := range alignedGroups {
+		timestamps = append(timestamps, ts)
+	}
+	sort.Slice(timestamps, func(i, j int) bool {
+		return timestamps[i] < timestamps[j]
+	})
+
+	// Apply data handling mode to aligned groups
+	var validGroups []map[string]pmetric.NumberDataPoint
+	for _, ts := range timestamps {
+		group := alignedGroups[ts]
+		if len(group) == requiredInputs {
+			validGroups = append(validGroups, group)
+		}
+	}
+
+	// Apply windowing/latest logic to valid groups
+	switch mp.config.DataHandling.Mode {
+	case "latest", "":
+		if len(validGroups) > 0 {
+			// Take only the last complete group
+			lastGroup := validGroups[len(validGroups)-1]
+			for name, dp := range lastGroup {
+				result[name] = []pmetric.NumberDataPoint{dp}
+			}
+		}
+	case "window":
+		windowSize := mp.config.DataHandling.WindowSize
+		if windowSize <= 0 {
+			windowSize = 1
+		}
+		startIdx := len(validGroups) - windowSize
+		if startIdx < 0 {
+			startIdx = 0
+		}
+		for i := startIdx; i < len(validGroups); i++ {
+			for name, dp := range validGroups[i] {
+				result[name] = append(result[name], dp)
+			}
+		}
+	case "all":
+		for _, group := range validGroups {
+			for name, dp := range group {
+				result[name] = append(result[name], dp)
+			}
+		}
+	}
+
+	return result, nil
+}
+
 // metricToInferInputTensorWithMatching converts a metric to tensor using only matched data points
 func (mp *metricsinferenceprocessor) metricToInferInputTensorWithMatching(name string, metric pmetric.Metric, context *modelContext) (*pb.ModelInferRequest_InferInputTensor, error) {
 	if context == nil || len(context.matchedDataPoints) == 0 {
@@ -1038,18 +1266,61 @@ func (mp *metricsinferenceprocessor) gaugeToTensor(name string, metric pmetric.M
 	}
 
 	dps := metric.Gauge().DataPoints()
-	shape := []int64{int64(dps.Len())}
-	contents := &pb.InferTensorContents{}
+	if dps.Len() == 0 {
+		return nil, fmt.Errorf("no data points in gauge metric")
+	}
 
-	// Extract values from data points
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
+	contents := &pb.InferTensorContents{}
+	var shape []int64
+
+	// Apply data handling mode
+	switch mp.config.DataHandling.Mode {
+	case "latest", "":
+		// Default to latest mode - send only the most recent data point
+		dp := dps.At(dps.Len() - 1) // Get the last data point
 		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:
 			contents.Fp64Contents = append(contents.Fp64Contents, float64(dp.IntValue()))
 		case pmetric.NumberDataPointValueTypeDouble:
 			contents.Fp64Contents = append(contents.Fp64Contents, dp.DoubleValue())
 		}
+		shape = []int64{1}
+
+	case "window":
+		// Send the last N data points
+		windowSize := mp.config.DataHandling.WindowSize
+		if windowSize <= 0 {
+			windowSize = 1
+		}
+		
+		startIdx := dps.Len() - windowSize
+		if startIdx < 0 {
+			startIdx = 0
+		}
+		
+		for i := startIdx; i < dps.Len(); i++ {
+			dp := dps.At(i)
+			switch dp.ValueType() {
+			case pmetric.NumberDataPointValueTypeInt:
+				contents.Fp64Contents = append(contents.Fp64Contents, float64(dp.IntValue()))
+			case pmetric.NumberDataPointValueTypeDouble:
+				contents.Fp64Contents = append(contents.Fp64Contents, dp.DoubleValue())
+			}
+		}
+		shape = []int64{int64(dps.Len() - startIdx)}
+
+	case "all":
+		// Send all accumulated data points (original behavior)
+		for i := 0; i < dps.Len(); i++ {
+			dp := dps.At(i)
+			switch dp.ValueType() {
+			case pmetric.NumberDataPointValueTypeInt:
+				contents.Fp64Contents = append(contents.Fp64Contents, float64(dp.IntValue()))
+			case pmetric.NumberDataPointValueTypeDouble:
+				contents.Fp64Contents = append(contents.Fp64Contents, dp.DoubleValue())
+			}
+		}
+		shape = []int64{int64(dps.Len())}
 	}
 
 	return &pb.ModelInferRequest_InferInputTensor{
@@ -1067,18 +1338,61 @@ func (mp *metricsinferenceprocessor) sumToTensor(name string, metric pmetric.Met
 	}
 
 	dps := metric.Sum().DataPoints()
-	shape := []int64{int64(dps.Len())}
-	contents := &pb.InferTensorContents{}
+	if dps.Len() == 0 {
+		return nil, fmt.Errorf("no data points in sum metric")
+	}
 
-	// Extract values from data points
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
+	contents := &pb.InferTensorContents{}
+	var shape []int64
+
+	// Apply data handling mode
+	switch mp.config.DataHandling.Mode {
+	case "latest", "":
+		// Default to latest mode - send only the most recent data point
+		dp := dps.At(dps.Len() - 1) // Get the last data point
 		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:
 			contents.Fp64Contents = append(contents.Fp64Contents, float64(dp.IntValue()))
 		case pmetric.NumberDataPointValueTypeDouble:
 			contents.Fp64Contents = append(contents.Fp64Contents, dp.DoubleValue())
 		}
+		shape = []int64{1}
+
+	case "window":
+		// Send the last N data points
+		windowSize := mp.config.DataHandling.WindowSize
+		if windowSize <= 0 {
+			windowSize = 1
+		}
+		
+		startIdx := dps.Len() - windowSize
+		if startIdx < 0 {
+			startIdx = 0
+		}
+		
+		for i := startIdx; i < dps.Len(); i++ {
+			dp := dps.At(i)
+			switch dp.ValueType() {
+			case pmetric.NumberDataPointValueTypeInt:
+				contents.Fp64Contents = append(contents.Fp64Contents, float64(dp.IntValue()))
+			case pmetric.NumberDataPointValueTypeDouble:
+				contents.Fp64Contents = append(contents.Fp64Contents, dp.DoubleValue())
+			}
+		}
+		shape = []int64{int64(dps.Len() - startIdx)}
+
+	case "all":
+		// Send all accumulated data points (original behavior)
+		for i := 0; i < dps.Len(); i++ {
+			dp := dps.At(i)
+			switch dp.ValueType() {
+			case pmetric.NumberDataPointValueTypeInt:
+				contents.Fp64Contents = append(contents.Fp64Contents, float64(dp.IntValue()))
+			case pmetric.NumberDataPointValueTypeDouble:
+				contents.Fp64Contents = append(contents.Fp64Contents, dp.DoubleValue())
+			}
+		}
+		shape = []int64{int64(dps.Len())}
 	}
 
 	return &pb.ModelInferRequest_InferInputTensor{
