@@ -3,9 +3,8 @@ name: Release
 on:
   workflow_run:
     workflows: ["CI"]
-    types:
-      - completed
-    branches: [ main ]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: write
@@ -15,16 +14,16 @@ permissions:
 
 jobs:
   release:
+    name: Semantic Release
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
+      new_release_major_version: ${{ steps.semantic.outputs.new_release_major_version }}
+      new_release_minor_version: ${{ steps.semantic.outputs.new_release_minor_version }}
+      new_release_patch_version: ${{ steps.semantic.outputs.new_release_patch_version }}
     steps:
-      # Checkout with a token that has permissions to bypass branch protection
-      # RELEASE_TOKEN should be a fine-grained PAT with:
-      # - Contents: Write
-      # - Issues: Write 
-      # - Pull requests: Write
-      # - Administration: Write (for branch protection bypass)
-      # Or configure branch protection to allow github-actions[bot] to bypass
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -57,6 +56,26 @@ jobs:
             @semantic-release/exec@6 \
             conventional-changelog-conventionalcommits@7
       
+      - name: Run semantic release
+        id: semantic
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: "github-actions[bot]"
+          GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
+          GIT_COMMITTER_NAME: "github-actions[bot]"
+          GIT_COMMITTER_EMAIL: "github-actions[bot]@users.noreply.github.com"
+        run: semantic-release
+
+  docker:
+    name: Build and Push Docker Image
+    needs: release
+    if: needs.release.outputs.new_release_published == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
@@ -67,11 +86,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          GIT_AUTHOR_NAME: "github-actions[bot]"
-          GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
-          GIT_COMMITTER_NAME: "github-actions[bot]"
-          GIT_COMMITTER_EMAIL: "github-actions[bot]@users.noreply.github.com"
-        run: semantic-release
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.release.outputs.new_release_version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.release.outputs.new_release_version }}
+            type=semver,pattern={{major}},value=${{ needs.release.outputs.new_release_version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ needs.release.outputs.new_release_version }}

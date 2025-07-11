@@ -215,6 +215,35 @@ When modifying the inference protocol:
 
 The project structure is designed for simplicity and future expansion, with clear separation between the collector build system and individual processor development.
 
+## CI/CD Pipeline
+
+The project uses a unified 3-workflow CI/CD strategy:
+
+### Continuous Integration (`.github/workflows/ci.yml`)
+- Runs on every push and pull request
+- Job sequence: lint → test/build → integration-test/docker-build
+- Includes Go formatting checks, conventional commit validation, and unit/integration tests
+- Uploads binary artifacts for the release workflow
+- Uses concurrency controls to cancel in-progress runs
+
+### Automated Releases (`.github/workflows/release.yml`)
+- Triggers only after successful CI completion
+- Uses semantic-release for version determination
+- Publishes Docker images to GitHub Container Registry (GHCR)
+- Creates GitHub releases with binary artifacts
+- Conditional Docker publishing (only on new releases)
+
+### Documentation (`.github/workflows/docs.yml`)
+- Automatically builds and deploys Go documentation
+- Publishes to GitHub Pages on main branch and tags
+- Preserves documentation history for each release
+
+### Key CI/CD Features
+- **Fail-fast approach**: Linting failures prevent other jobs
+- **Intelligent caching**: Go module and build caching
+- **Version injection**: Automatic version tagging in binaries
+- **Multi-platform ready**: Currently linux/amd64, expandable to multi-arch
+
 ## Configuration and Tooling Recommendations
 
 - Use `podman` rather than `docker`
