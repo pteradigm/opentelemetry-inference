@@ -168,10 +168,10 @@ func TestAbbreviation(t *testing.T) {
 				// Should be reasonably short
 				assert.Less(t, len(result), 50)
 				// Should contain some recognizable parts
-				assert.True(t, 
-					strings.Contains(result, "app") || 
-					strings.Contains(result, "net") ||
-					strings.Contains(result, "db"))
+				assert.True(t,
+					strings.Contains(result, "app") ||
+						strings.Contains(result, "net") ||
+						strings.Contains(result, "db"))
 			},
 		},
 		{

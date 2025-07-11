@@ -12,13 +12,13 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 
-	pb "github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor/proto/v2"
 	"github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor/internal/testutil"
+	pb "github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor/proto/v2"
 )
 
 func TestMultipleInstancesWithUniqueOutputs(t *testing.T) {
 	// Test that multiple instances of the same model produce uniquely named outputs
-	
+
 	mockServer := testutil.NewMockInferenceServer()
 	mockServer.Start(t)
 	defer mockServer.Stop()

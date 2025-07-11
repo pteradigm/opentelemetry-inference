@@ -10,10 +10,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 
 	"github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor/internal/testutil"
@@ -96,7 +96,7 @@ func TestDataHandlingModes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Reset mock server requests between tests
 			mockServer.Reset()
-			
+
 			// Configure mock response - inference servers typically return a single result
 			// even when processing multiple data points (e.g., batch prediction)
 			mockServer.SetModelResponse("test-scaler", &pb.ModelInferResponse{
@@ -113,7 +113,7 @@ func TestDataHandlingModes(t *testing.T) {
 					},
 				},
 			})
-			
+
 			// Set up model metadata
 			mockServer.SetModelMetadata("test-scaler", &pb.ModelMetadataResponse{
 				Name:     "test-scaler",
@@ -148,7 +148,7 @@ func TestDataHandlingModes(t *testing.T) {
 			sink := &consumertest.MetricsSink{}
 			mp, err := newMetricsProcessor(cfg, sink, zap.NewNop())
 			require.NoError(t, err)
-			
+
 			// Start processor
 			err = mp.Start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
@@ -182,12 +182,12 @@ func TestDataHandlingModes(t *testing.T) {
 			// Verify the input was sent correctly by checking the request
 			requests := mockServer.GetRequests()
 			require.Len(t, requests, 1, "Expected one inference request")
-			
+
 			// Check that the input tensor has the expected number of values
 			require.Len(t, requests[0].Inputs, 1, "Expected one input tensor")
 			inputTensor := requests[0].Inputs[0]
 			actualInputCount := len(inputTensor.Contents.Fp64Contents)
-			
+
 			assert.Equal(t, tt.expectedCount, actualInputCount, tt.description)
 		})
 	}
@@ -294,7 +294,7 @@ func TestDataHandlingWithTemporalAlignment(t *testing.T) {
 	require.NotNil(t, outputMetric, "Output metric not found")
 
 	// Should only have 1 data point (latest aligned pair)
-	assert.Equal(t, 1, outputMetric.Gauge().DataPoints().Len(), 
+	assert.Equal(t, 1, outputMetric.Gauge().DataPoints().Len(),
 		"Temporal alignment with latest mode should produce 1 data point")
 }
 
@@ -304,18 +304,18 @@ func createMetricsWithMultipleDataPointsForTest(metricName string, count int) pm
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	sm := rm.ScopeMetrics().AppendEmpty()
-	
+
 	metric := sm.Metrics().AppendEmpty()
 	metric.SetName(metricName)
 	gauge := metric.SetEmptyGauge()
-	
+
 	baseTime := time.Now()
 	for i := 0; i < count; i++ {
 		dp := gauge.DataPoints().AppendEmpty()
-		dp.SetDoubleValue(float64(i + 1) * 10.0)
+		dp.SetDoubleValue(float64(i+1) * 10.0)
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(baseTime.Add(time.Duration(i) * time.Second)))
 	}
-	
+
 	return md
 }
 

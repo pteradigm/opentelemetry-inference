@@ -118,11 +118,11 @@ func TestDataHandlingIntegrationWithMLServer(t *testing.T) {
 					for k := 0; k < sm.Metrics().Len(); k++ {
 						metric := sm.Metrics().At(k)
 						// Try various possible output names
-						if metric.Name() == "test_cpu_usage.scaled_output" || 
-						   metric.Name() == "test_cpu_usage.output" ||
-						   metric.Name() == "test.cpu.usage.output" ||
-						   metric.Name() == "cpu_usage.scaled_result" ||
-						   metric.Name() == "test_cpu_usage.scaled_result" {
+						if metric.Name() == "test_cpu_usage.scaled_output" ||
+							metric.Name() == "test_cpu_usage.output" ||
+							metric.Name() == "test.cpu.usage.output" ||
+							metric.Name() == "cpu_usage.scaled_result" ||
+							metric.Name() == "test_cpu_usage.scaled_result" {
 							outputMetric = metric
 						}
 					}
@@ -138,7 +138,7 @@ func TestDataHandlingIntegrationWithMLServer(t *testing.T) {
 			// Verify values
 			for i := 0; i < gauge.DataPoints().Len(); i++ {
 				dp := gauge.DataPoints().At(i)
-				assert.Equal(t, tc.expectedResults[i], dp.DoubleValue(), 
+				assert.Equal(t, tc.expectedResults[i], dp.DoubleValue(),
 					"Data point %d should match expected value", i)
 			}
 		})
@@ -201,8 +201,8 @@ func TestDataHandlingWithMultipleInputs(t *testing.T) {
 			sm := rm.ScopeMetrics().At(j)
 			for k := 0; k < sm.Metrics().Len(); k++ {
 				metric := sm.Metrics().At(k)
-				if metric.Name() == "metric1_metric2.sum_output" || 
-				   metric.Name() == "metric1_metric2.sum_result" {
+				if metric.Name() == "metric1_metric2.sum_output" ||
+					metric.Name() == "metric1_metric2.sum_result" {
 					outputMetric = metric
 				}
 			}
@@ -214,7 +214,7 @@ func TestDataHandlingWithMultipleInputs(t *testing.T) {
 	// Should have only 1 data point (latest mode)
 	gauge := outputMetric.Gauge()
 	assert.Equal(t, 1, gauge.DataPoints().Len(), "Latest mode should produce single output")
-	
+
 	// The sum of the latest values (30 + 40 = 70)
 	assert.Equal(t, 70.0, gauge.DataPoints().At(0).DoubleValue())
 }
@@ -225,18 +225,18 @@ func createTimeSeriesMetrics(metricName string, numDataPoints int) pmetric.Metri
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	sm := rm.ScopeMetrics().AppendEmpty()
-	
+
 	metric := sm.Metrics().AppendEmpty()
 	metric.SetName(metricName)
 	gauge := metric.SetEmptyGauge()
-	
+
 	baseTime := time.Now()
 	for i := 0; i < numDataPoints; i++ {
 		dp := gauge.DataPoints().AppendEmpty()
 		dp.SetDoubleValue(float64((i + 1) * 10)) // 10, 20, 30, etc.
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(baseTime.Add(time.Duration(i) * time.Second)))
 	}
-	
+
 	return md
 }
 
@@ -244,30 +244,30 @@ func createAlignedMetrics() pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
 	sm := rm.ScopeMetrics().AppendEmpty()
-	
+
 	// Metric 1
 	metric1 := sm.Metrics().AppendEmpty()
 	metric1.SetName("metric1")
 	gauge1 := metric1.SetEmptyGauge()
-	
+
 	baseTime := time.Now()
 	for i := 0; i < 3; i++ {
 		dp := gauge1.DataPoints().AppendEmpty()
 		dp.SetDoubleValue(float64((i + 1) * 10)) // 10, 20, 30
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(baseTime.Add(time.Duration(i) * time.Second)))
 	}
-	
+
 	// Metric 2 with slightly offset timestamps (within tolerance)
 	metric2 := sm.Metrics().AppendEmpty()
 	metric2.SetName("metric2")
 	gauge2 := metric2.SetEmptyGauge()
-	
+
 	for i := 0; i < 3; i++ {
 		dp := gauge2.DataPoints().AppendEmpty()
 		dp.SetDoubleValue(float64((i + 2) * 10)) // 20, 30, 40
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(
 			baseTime.Add(time.Duration(i)*time.Second + 100*time.Millisecond))) // 100ms offset
 	}
-	
+
 	return md
 }

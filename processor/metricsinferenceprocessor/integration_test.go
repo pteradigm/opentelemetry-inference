@@ -62,7 +62,7 @@ func TestMLServerIntegration(t *testing.T) {
 		// Test model readiness
 		_, err = client.ModelReady(ctx, &pb.ModelReadyRequest{Name: "simple-scaler"})
 		require.NoError(t, err, "Model 'simple-scaler' should be ready")
-		
+
 		// Test sum model readiness
 		_, err = client.ModelReady(ctx, &pb.ModelReadyRequest{Name: "simple-sum"})
 		require.NoError(t, err, "Model 'simple-sum' should be ready")
@@ -96,7 +96,7 @@ func TestMLServerIntegration(t *testing.T) {
 			err := processor.Shutdown(context.Background())
 			assert.NoError(t, err)
 		}()
-		
+
 		// Create test metrics
 		inputMetrics := testutil.GenerateTestMetrics(testutil.TestMetric{
 			MetricNames:  []string{"test.metric"},

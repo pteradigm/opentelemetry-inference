@@ -62,10 +62,10 @@ func TestParseLabelSelector(t *testing.T) {
 			errorContains: "missing or misplaced closing brace",
 		},
 		{
-			name:          "missing opening brace",
-			selector:      "metric_name label=\"value\"}",
-			wantMetric:    "metric_name label=\"value\"}",
-			wantLabels:    map[string]string{},
+			name:       "missing opening brace",
+			selector:   "metric_name label=\"value\"}",
+			wantMetric: "metric_name label=\"value\"}",
+			wantLabels: map[string]string{},
 		},
 		{
 			name:          "empty metric name",
@@ -102,7 +102,7 @@ func TestParseLabelSelector(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ls, err := parseLabelSelector(tt.selector)
-			
+
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.errorContains != "" {
@@ -110,7 +110,7 @@ func TestParseLabelSelector(t *testing.T) {
 				}
 				return
 			}
-			
+
 			require.NoError(t, err)
 			require.NotNil(t, ls)
 			assert.Equal(t, tt.wantMetric, ls.metricName)

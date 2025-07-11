@@ -55,8 +55,8 @@ func TestBroadcastSemanticsForMixedInputs(t *testing.T) {
 		},
 		Rules: []Rule{
 			{
-				ModelName: "simple-product",
-				Inputs:    []string{"system.memory.utilization", "system.memory.limit"},
+				ModelName:     "simple-product",
+				Inputs:        []string{"system.memory.utilization", "system.memory.limit"},
 				OutputPattern: "{output}",
 				Outputs: []OutputSpec{
 					{
@@ -129,21 +129,21 @@ func TestBroadcastSemanticsForMixedInputs(t *testing.T) {
 	}
 
 	actualStateValues := make(map[string]float64)
-	
+
 	for i := 0; i < gauge.DataPoints().Len(); i++ {
 		dp := gauge.DataPoints().At(i)
 		attrs := dp.Attributes()
-		
+
 		// Check that state attribute is preserved from the attributed input
 		// Now using namespaced attributes
 		state, ok := attrs.Get("system.memory.utilization.state")
 		require.True(t, ok, "system.memory.utilization.state attribute should be present on data point %d", i)
-		
+
 		actualStateValues[state.Str()] = dp.DoubleValue()
-		
+
 		// Verify state attribute is preserved (no inference labels should be added)
 	}
-	
+
 	// Verify all state values match expected
 	assert.Equal(t, expectedStateValues, actualStateValues, "all state values should match expected")
 }

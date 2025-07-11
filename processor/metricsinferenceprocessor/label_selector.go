@@ -64,14 +64,14 @@ func parseLabelSelector(selector string) (*labelSelector, error) {
 func parseLabelPairs(labelPart string) (map[string]string, error) {
 	labels := make(map[string]string)
 	labelPart = strings.TrimSpace(labelPart)
-	
+
 	if labelPart == "" {
 		return labels, nil
 	}
 
 	// Split by comma, but need to handle commas within quotes
 	pairs := splitLabelPairs(labelPart)
-	
+
 	for _, pair := range pairs {
 		pair = strings.TrimSpace(pair)
 		if pair == "" {
@@ -93,7 +93,7 @@ func parseLabelPairs(labelPart string) (map[string]string, error) {
 
 		// Remove quotes from value
 		value = strings.Trim(value, "\"")
-		
+
 		labels[key] = value
 	}
 
@@ -105,11 +105,11 @@ func splitLabelPairs(labelPart string) []string {
 	if labelPart == "" {
 		return []string{}
 	}
-	
+
 	var pairs []string
 	var current strings.Builder
 	inQuotes := false
-	
+
 	for i, ch := range labelPart {
 		switch ch {
 		case '"':
@@ -125,7 +125,7 @@ func splitLabelPairs(labelPart string) []string {
 		default:
 			current.WriteRune(ch)
 		}
-		
+
 		// Handle last pair
 		if i == len(labelPart)-1 {
 			if current.Len() > 0 {
@@ -133,6 +133,6 @@ func splitLabelPairs(labelPart string) []string {
 			}
 		}
 	}
-	
+
 	return pairs
 }

@@ -12,15 +12,15 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 
-	pb "github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor/proto/v2"
 	"github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor/internal/testutil"
+	pb "github.com/rbellamy/opentelemetry-inference/processor/metricsinferenceprocessor/proto/v2"
 )
 
 func TestMetadataDiscovery(t *testing.T) {
 	tests := []struct {
-		name           string
-		config         *Config
-		modelMetadata  map[string]*pb.ModelMetadataResponse
+		name            string
+		config          *Config
+		modelMetadata   map[string]*pb.ModelMetadataResponse
 		expectedOutputs map[string][]string // model -> output names
 	}{
 		{

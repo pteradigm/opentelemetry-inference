@@ -125,7 +125,7 @@ func TestInputValidation_WrongInputCount(t *testing.T) {
 				Shape:    []int64{1},
 			},
 			{
-				Name:     "input2", 
+				Name:     "input2",
 				Datatype: "FP64",
 				Shape:    []int64{1},
 			},
@@ -181,7 +181,7 @@ func TestInputValidation_WrongInputCount(t *testing.T) {
 	// Verify no inference output was created (only original metric passed through)
 	allMetrics := sink.AllMetrics()
 	require.Len(t, allMetrics, 1)
-	
+
 	// Should only have the original metric, no inference output
 	outputMetrics := allMetrics[0]
 	rm := outputMetrics.ResourceMetrics().At(0)
@@ -264,7 +264,7 @@ func TestInputValidation_WrongShape(t *testing.T) {
 
 	// Configure model metadata expecting scalar input
 	modelMetadata := &pb.ModelMetadataResponse{
-		Name:     "scalar-model", 
+		Name:     "scalar-model",
 		Platform: "test",
 		Inputs: []*pb.ModelMetadataResponse_TensorMetadata{
 			{
@@ -276,7 +276,7 @@ func TestInputValidation_WrongShape(t *testing.T) {
 		Outputs: []*pb.ModelMetadataResponse_TensorMetadata{
 			{
 				Name:     "output",
-				Datatype: "FP64", 
+				Datatype: "FP64",
 				Shape:    []int64{},
 			},
 		},
@@ -416,13 +416,13 @@ func createValidationTestMetrics(metricName string, valueType pmetric.NumberData
 	for i := 0; i < dataPointCount; i++ {
 		dp := gauge.DataPoints().AppendEmpty()
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		
+
 		if valueType == pmetric.NumberDataPointValueTypeInt {
 			dp.SetIntValue(int64(i + 1))
 		} else {
 			dp.SetDoubleValue(float64(i + 1))
 		}
-		
+
 		// Add some attributes for multi-datapoint tests
 		if dataPointCount > 1 {
 			dp.Attributes().PutStr("index", string(rune('a'+i)))

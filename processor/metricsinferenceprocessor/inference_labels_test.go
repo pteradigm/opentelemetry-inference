@@ -51,9 +51,9 @@ func TestAttributesPreservedWithModelLabels(t *testing.T) {
 		},
 		Rules: []Rule{
 			{
-				ModelName:    "simple-scaler",
-				ModelVersion: "v1.0",
-				Inputs:       []string{"test.metric"},
+				ModelName:     "simple-scaler",
+				ModelVersion:  "v1.0",
+				Inputs:        []string{"test.metric"},
 				OutputPattern: "{output}",
 				Outputs: []OutputSpec{
 					{
@@ -127,30 +127,29 @@ func TestAttributesPreservedWithModelLabels(t *testing.T) {
 		t.Logf("  %s: %s", k, v.AsString())
 		return true
 	})
-	
+
 	// Verify original attributes are preserved with namespacing
 	originalAttr, ok := attrs.Get("test.metric.test.label")
 	require.True(t, ok, "namespaced test.label attribute missing")
 	assert.Equal(t, "test.value", originalAttr.Str())
-	
+
 	hostAttr, ok := attrs.Get("test.metric.host")
 	require.True(t, ok, "namespaced host attribute missing")
 	assert.Equal(t, "test-host", hostAttr.Str())
-	
+
 	// Verify model name and version labels are present (but not status)
 	modelName, hasModelName := attrs.Get("otel.inference.model.name")
 	assert.True(t, hasModelName, "model name label should be present")
 	assert.Equal(t, "simple-scaler", modelName.Str())
-	
+
 	modelVersion, hasModelVersion := attrs.Get("otel.inference.model.version")
 	assert.True(t, hasModelVersion, "model version label should be present")
 	assert.Equal(t, "v1.0", modelVersion.Str())
-	
+
 	// Verify NO status label is added (we removed it)
 	_, hasStatus := attrs.Get("otel.inference.status")
 	assert.False(t, hasStatus, "status label should not be present")
 }
-
 
 func createTestMetricsWithAttributes() pmetric.Metrics {
 	md := pmetric.NewMetrics()
@@ -173,4 +172,3 @@ func createTestMetricsWithAttributes() pmetric.Metrics {
 
 	return md
 }
-

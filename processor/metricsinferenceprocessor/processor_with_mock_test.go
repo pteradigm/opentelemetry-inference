@@ -44,8 +44,8 @@ func TestMetricsInferenceProcessorWithMockServer(t *testing.T) {
 			config: &Config{
 				Rules: []Rule{
 					{
-						ModelName: "scale_5",
-						Inputs:    []string{"metric_1"},
+						ModelName:     "scale_5",
+						Inputs:        []string{"metric_1"},
 						OutputPattern: "{output}",
 						Outputs: []OutputSpec{
 							{Name: "metric_1_scaled"},
@@ -68,8 +68,8 @@ func TestMetricsInferenceProcessorWithMockServer(t *testing.T) {
 			config: &Config{
 				Rules: []Rule{
 					{
-						ModelName: "calculate_add",
-						Inputs:    []string{"metric_1", "metric_2"},
+						ModelName:     "calculate_add",
+						Inputs:        []string{"metric_1", "metric_2"},
 						OutputPattern: "{output}",
 						Outputs: []OutputSpec{
 							{Name: "metric_calculated"},
@@ -115,16 +115,16 @@ func TestMetricsInferenceProcessorWithMockServer(t *testing.T) {
 			config: &Config{
 				Rules: []Rule{
 					{
-						ModelName: "scale_2",
-						Inputs:    []string{"metric_1"},
+						ModelName:     "scale_2",
+						Inputs:        []string{"metric_1"},
 						OutputPattern: "{output}",
 						Outputs: []OutputSpec{
 							{Name: "metric_1_scaled"},
 						},
 					},
 					{
-						ModelName: "calculate_add",
-						Inputs:    []string{"metric_1", "metric_2"},
+						ModelName:     "calculate_add",
+						Inputs:        []string{"metric_1", "metric_2"},
 						OutputPattern: "{output}",
 						Outputs: []OutputSpec{
 							{Name: "metric_calculated"},
@@ -148,8 +148,8 @@ func TestMetricsInferenceProcessorWithMockServer(t *testing.T) {
 			config: &Config{
 				Rules: []Rule{
 					{
-						ModelName: "sum_model",
-						Inputs:    []string{"metric_a", "metric_b"},
+						ModelName:     "sum_model",
+						Inputs:        []string{"metric_a", "metric_b"},
 						OutputPattern: "{output}",
 						Outputs: []OutputSpec{
 							{Name: "metric_sum"},

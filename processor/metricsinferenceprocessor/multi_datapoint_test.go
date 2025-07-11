@@ -38,7 +38,7 @@ func TestMultipleDataPointsPreserveAttributes(t *testing.T) {
 				Datatype: "FP64",
 				Shape:    []int64{3}, // Three output values
 				Contents: &pb.InferTensorContents{
-					// Values arranged to match sorted attribute order: cached, free, used  
+					// Values arranged to match sorted attribute order: cached, free, used
 					Fp64Contents: []float64{60.0, 40.0, 20.0}, // cached(30→60), free(20→40), used(10→20)
 				},
 			},
@@ -53,8 +53,8 @@ func TestMultipleDataPointsPreserveAttributes(t *testing.T) {
 		},
 		Rules: []Rule{
 			{
-				ModelName: "test-scaler",
-				Inputs:    []string{"memory.usage"},
+				ModelName:     "test-scaler",
+				Inputs:        []string{"memory.usage"},
 				OutputPattern: "{output}",
 				Outputs: []OutputSpec{
 					{
@@ -128,20 +128,20 @@ func TestMultipleDataPointsPreserveAttributes(t *testing.T) {
 
 	// Collect actual data points by state for order-independent verification
 	actualStateValues := make(map[string]float64)
-	
+
 	for i := 0; i < gauge.DataPoints().Len(); i++ {
 		dp := gauge.DataPoints().At(i)
 		attrs := dp.Attributes()
-		
+
 		// Check that state attribute is preserved with namespacing
 		state, ok := attrs.Get("memory.usage.state")
 		require.True(t, ok, "memory.usage.state attribute should be present on data point %d", i)
-		
+
 		actualStateValues[state.Str()] = dp.DoubleValue()
-		
+
 		// Verify state attribute is preserved (no inference labels should be added)
 	}
-	
+
 	// Verify we have all expected states with correct values
 	assert.Equal(t, expectedStateValues, actualStateValues, "all state values should match expected")
 }

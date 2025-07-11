@@ -79,7 +79,7 @@ func (cfg *Config) Validate() error {
 		}
 		// Outputs are now optional - they can be discovered from model metadata
 		// We'll validate at runtime if neither configured nor discovered outputs exist
-		
+
 		// Validate output pattern if specified
 		if rule.OutputPattern != "" {
 			if err := validateOutputPattern(rule.OutputPattern); err != nil {
@@ -96,11 +96,11 @@ func (cfg *Config) Validate() error {
 		default:
 			return fmt.Errorf("invalid data_handling.mode: %s (must be 'latest', 'window', or 'all')", cfg.DataHandling.Mode)
 		}
-		
+
 		if cfg.DataHandling.Mode == "window" && cfg.DataHandling.WindowSize <= 0 {
 			return fmt.Errorf("data_handling.window_size must be positive when mode is 'window'")
 		}
-		
+
 		if cfg.DataHandling.TimestampTolerance < 0 {
 			return fmt.Errorf("data_handling.timestamp_tolerance must be non-negative")
 		}
