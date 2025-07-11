@@ -420,53 +420,60 @@ func CreateMockResponseForDataType(modelName string, dataType string, value inte
 
 // CreateMockResponseForMixedTypes creates a mock response with multiple outputs of different types
 func CreateMockResponseForMixedTypes(modelName string, values map[string]interface{}) *pb.ModelInferResponse {
-	outputs := make([]*pb.ModelInferResponse_InferOutputTensor, 0, len(values))
+	// To ensure deterministic ordering, we need to know the expected order
+	// Based on the test configuration, the expected order is:
+	// output_0: anomaly_score (float32)
+	// output_1: alert_level (int32)
+	// output_2: confidence (float64)
+	outputs := make([]*pb.ModelInferResponse_InferOutputTensor, 3)
 	
-	i := 0
-	for _, value := range values {
-		output := &pb.ModelInferResponse_InferOutputTensor{
-			Name:  fmt.Sprintf("output_%d", i),
-			Shape: []int64{1},
-		}
-		
-		switch v := value.(type) {
-		case float32:
-			output.Datatype = "FP32"
-			output.Contents = &pb.InferTensorContents{
+	// Create outputs in the expected order based on the test configuration
+	if v, ok := values["anomaly_score"].(float32); ok {
+		outputs[0] = &pb.ModelInferResponse_InferOutputTensor{
+			Name:     "output_0",
+			Datatype: "FP32",
+			Shape:    []int64{1},
+			Contents: &pb.InferTensorContents{
 				Fp32Contents: []float32{v},
-			}
-		case float64:
-			output.Datatype = "FP64"
-			output.Contents = &pb.InferTensorContents{
-				Fp64Contents: []float64{v},
-			}
-		case int32:
-			output.Datatype = "INT32"
-			output.Contents = &pb.InferTensorContents{
-				IntContents: []int32{v},
-			}
-		case int64:
-			output.Datatype = "INT64"
-			output.Contents = &pb.InferTensorContents{
-				Int64Contents: []int64{v},
-			}
-		default:
-			// Default to FP64 with zero value
-			output.Datatype = "FP64"
-			output.Contents = &pb.InferTensorContents{
-				Fp64Contents: []float64{0.0},
-			}
+			},
 		}
-		
-		outputs = append(outputs, output)
-		i++
+	}
+	
+	if v, ok := values["alert_level"].(int32); ok {
+		outputs[1] = &pb.ModelInferResponse_InferOutputTensor{
+			Name:     "output_1", 
+			Datatype: "INT32",
+			Shape:    []int64{1},
+			Contents: &pb.InferTensorContents{
+				IntContents: []int32{v},
+			},
+		}
+	}
+	
+	if v, ok := values["confidence"].(float64); ok {
+		outputs[2] = &pb.ModelInferResponse_InferOutputTensor{
+			Name:     "output_2",
+			Datatype: "FP64",
+			Shape:    []int64{1},
+			Contents: &pb.InferTensorContents{
+				Fp64Contents: []float64{v},
+			},
+		}
+	}
+	
+	// Filter out any nil outputs (in case some values were missing)
+	var nonNilOutputs []*pb.ModelInferResponse_InferOutputTensor
+	for _, output := range outputs {
+		if output != nil {
+			nonNilOutputs = append(nonNilOutputs, output)
+		}
 	}
 	
 	return &pb.ModelInferResponse{
 		ModelName:    modelName,
 		ModelVersion: "1",
 		Id:           "test-request",
-		Outputs:      outputs,
+		Outputs:      nonNilOutputs,
 	}
 }
 
