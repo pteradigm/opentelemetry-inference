@@ -1,3 +1,11 @@
+## [1.1.0](https://github.com/pteradigm/opentelemetry-inference/compare/v1.0.0...v1.1.0) (2025-07-11)
+
+
+### Features
+
+* add Dependabot configuration with dependency grouping ([9ccc4c4](https://github.com/pteradigm/opentelemetry-inference/commit/9ccc4c48077d183bbdc595cbda99ce0ad16316c4))
+* add Dependabot configuration with dependency grouping ([#5](https://github.com/pteradigm/opentelemetry-inference/issues/5)) ([f17f032](https://github.com/pteradigm/opentelemetry-inference/commit/f17f03200710aec444393fd307078093414f1d3f))
+
 ## [1.0.0](https://github.com/pteradigm/opentelemetry-inference/compare/v0.2.0...v1.0.0) (2025-07-11)
 
 
