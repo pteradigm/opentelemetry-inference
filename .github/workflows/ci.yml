@@ -91,7 +91,7 @@ jobs:
       
       - name: Check commit messages
         if: github.event_name == 'pull_request'
-        uses: wagoid/commitlint-github-action@v5
+        uses: wagoid/commitlint-github-action@v6
         with:
           configFile: .commitlintrc.json
 
