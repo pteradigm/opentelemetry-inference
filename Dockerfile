@@ -21,7 +21,7 @@ COPY . .
 RUN make install-ocb && make build
 
 # Runtime stage
-FROM alpine:3.19
+FROM alpine:3.23
 
 RUN apk add --no-cache ca-certificates
 
